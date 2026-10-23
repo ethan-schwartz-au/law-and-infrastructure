@@ -8,10 +8,59 @@ format: html
 #| label: load-packages
 
 library(tidyverse)
+library(janitor) # to clean column names
 ```
 
 ```{r}
 #| label: import-data
 
-cololonize_data <- read.csv("data/coldata110.csv")
+colonize_data <- read.csv("data/coldata110.csv")
+colonize_data <- colonize_data %>%
+  clean_names() #standardizes column name format (lowercase, _ as seperator)
+
+wage_data <- read.csv("data/const_wage_data.csv")
+wage_data <- wage_data %>%
+  clean_names()
+```
+
+```{r}
+#| label: colonize-data-exploration
+
+dim(colonize_data)
+
+summary(colonize_data)
+
+```
+
+```{r}
+#| label: wage-data-exploration
+
+dim(wage_data)
+
+summary(wage_data)
+
+wage_data %>%
+  distinct(classif1_label)
+
+wage_data %>%
+  distinct(classif2_label)
+```
+
+```{r}
+#| label: colonize-data-clean
+```
+
+```{r}
+#| label: wage-data-clean
+wage_data_1 <- wage_data %>%
+  filter(sex_label == "Total") %>%
+  filter(classif1_label == "ILO sector: Construction") %>%
+  filter(classif2_label == "Currency: 2021 PPP $")
+
+wage_data_1 %>%
+  distinct(ref_area_label, time) %>%
+  count() # Equal to obs count in wage_data_1: there is now only 1 obs per
+          # nation-year combonation
+
+
 ```
