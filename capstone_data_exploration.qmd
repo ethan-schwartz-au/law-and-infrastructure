@@ -1,0 +1,17 @@
+---
+title: "Capstone Data Exploration"
+author: "Ethan Schwartz"
+format: html
+---
+
+```{r}
+#| label: load-packages
+
+library(tidyverse)
+```
+
+```{r}
+#| label: import-data
+
+cololonize_data <- read.csv("data/coldata110.csv")
+```
