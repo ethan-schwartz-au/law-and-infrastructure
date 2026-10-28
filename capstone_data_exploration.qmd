@@ -4,27 +4,51 @@ author: "Ethan Schwartz"
 format: html
 ---
 
+# Setup
+
 ```{r}
 #| label: load-packages
 
+# vector of needed packages
+pkgs <- c("tidyverse", "janitor", "countrycode") 
+# install packages that are on needed list but not on list of installed
+install.packages(setdiff(pkgs, rownames(installed.packages())))
+
 library(tidyverse)
-library(janitor) # to clean column names
+library(janitor) # to clean column names via clean_names()
+library(countrycode) # to unify country codes to one format
 ```
 
 ```{r}
 #| label: import-data
 
-colonize_data <- read.csv("data/coldata110.csv")
+transit_data <- read.csv("data/transit_costs_project_data.csv")
+transit_data <- transit_data %>%
+  clean_names() # standardizes column name format (lowercase, _ as seperator)
+
+colonize_data <- read.csv("data/col_data.csv")
 colonize_data <- colonize_data %>%
-  clean_names() #standardizes column name format (lowercase, _ as seperator)
+  clean_names() 
 
 wage_data <- read.csv("data/const_wage_data.csv")
 wage_data <- wage_data %>%
   clean_names()
+
+legal_origins_data <- read.csv("data/legal_origins_data.csv")
+legal_origins_data <- legal_origins_data %>%
+  clean_names()
+```
+
+# Data Exploration 1 (Raw)
+
+```{r}
+#| label: transit-data-exploration
+#| eval: False
 ```
 
 ```{r}
 #| label: colonize-data-exploration
+#| eval: False
 
 dim(colonize_data)
 
@@ -34,6 +58,7 @@ summary(colonize_data)
 
 ```{r}
 #| label: wage-data-exploration
+#| eval: False
 
 dim(wage_data)
 
@@ -46,8 +71,37 @@ wage_data %>%
   distinct(classif2_label)
 ```
 
+# Data Cleaning
+
+```{r}
+#| label: transit-data-clean
+
+# from countrycode: detects code type
+guess_field(transit_data$country)
+
+transit_data_1 <- transit_data %>%
+  mutate(iso3c = countrycode(country, "iso2c", "iso3c",
+                             custom_match = c("UK" = "GBR", "DR" = "DOM"))) %>%
+  relocate(iso3c, .after = country)
+```
+
 ```{r}
 #| label: colonize-data-clean
+
+# from countrycode: detects code type
+guess_field(colonize_data$state)
+
+## no iso codes for exctinct nations,
+## may need to hard code succecor state iso codes.
+## Austro-hungarian Empire is the sole colonizer w/out an iso3c code
+colonize_data_1 <- colonize_data %>%
+  mutate(iso3c = countrycode(state, "cown", "iso3c")) %>%
+  relocate(iso3c, .after = state) %>%
+  mutate(col_ruler_iso3c = countrycode(col_ruler, "cown", "iso3c")) %>%
+  relocate(col_ruler_iso3c, .after = col_ruler) %>%
+  mutate(ind_from_iso3c = countrycode(ind_from, "cown", "iso3c")) %>%
+  relocate(ind_from_iso3c, .after = ind_from)
+
 ```
 
 ```{r}
@@ -57,10 +111,18 @@ wage_data_1 <- wage_data %>%
   filter(classif1_label == "ILO sector: Construction") %>%
   filter(classif2_label == "Currency: 2021 PPP $")
 
+# check # of unique nation-year combonations
 wage_data_1 %>%
   distinct(ref_area_label, time) %>%
-  count() # Equal to obs count in wage_data_1: there is now only 1 obs per
-          # nation-year combonation
+  count()
+    # Equal to obs count in wage_data_1: there is now only 1 obs per
+    # nation-year combonation
+```
+
+# Data Exploration 2 (Cleaned)
+
+```{r}
+#| label: cleaned-explore-years
 
 
 ```
