@@ -48,7 +48,7 @@ wb_data <- read.csv("data/wb_gdppp_gov_data.csv")
 wb_data <- wb_data %>%
   clean_names()
 
-
+#D# might use
 wage_data <- read.csv("data/const_wage_data.csv")
 wage_data <- wage_data %>%
   clean_names()
@@ -65,9 +65,9 @@ wage_data <- wage_data %>%
 #| label: colonize-data-exploration
 #| eval: False
 
-dim(colonize_data)
-
-summary(colonize_data)
+# dim(colonize_data)
+# 
+# summary(colonize_data)
 ```
 
 ```{r}
@@ -80,9 +80,10 @@ summary(colonize_data)
 ```{r}
 #| label: transit-data-clean
 
-# from countrycode: detects code type
-guess_field(transit_data$country)
+# From countrycode: detects code type
+guess_field(transit_data$country) # iso2c: 97% match
 
+# Add variable that contains the country's iso3c code
 transit_data_1 <- transit_data %>%
   mutate(iso3c = countrycode(country, "iso2c", "iso3c",
                              custom_match = c("UK" = "GBR", "DR" = "DOM"))) %>%
@@ -92,20 +93,24 @@ transit_data_1 <- transit_data %>%
 ```{r}
 #| label: colonize-data-clean
 
-# from countrycode: detects code type
-guess_field(colonize_data$state)
+# From countrycode: detects code type
+guess_field(colonize_data$state) # cown: 99% match
 
 #d# no iso codes for exctinct nations,
 #d# may need to hard code succecor state iso codes.
-#d# Austro-hungarian Empire is the sole colonizer w/out an iso3c code
+
+
+# Austro-hungarian Empire is the sole colonizer w/out an iso3c code
+# 3 tansit projects are in czechia, colonized by the austro-hungarian empire
+# Using Austria iso3c code: shares a boarder with Czechia (Hungary does not)
 colonize_data_1 <- colonize_data %>%
   mutate(iso3c = countrycode(state, "cown", "iso3c")) %>%
   relocate(iso3c, .after = state) %>%
-  mutate(col_ruler_iso3c = countrycode(col_ruler, "cown", "iso3c")) %>%
+  mutate(col_ruler_iso3c = countrycode(col_ruler, "cown", "iso3c",
+                                       custom_match = c("300" = "AUT"))) %>%
   relocate(col_ruler_iso3c, .after = col_ruler) %>%
   mutate(ind_from_iso3c = countrycode(ind_from, "cown", "iso3c")) %>%
   relocate(ind_from_iso3c, .after = ind_from)
-
 ```
 
 ```{r}
@@ -121,6 +126,18 @@ wage_data_1 %>%
   count()
     # Equal to obs count in wage_data_1: there is now only 1 obs per
     # nation-year combanation
+```
+
+```{r}
+#| Label: data-join
+
+#TD# join to transit_data_1
+
+#TD# legal origins
+
+#TD# colonize
+
+#TD# wb data
 ```
 
 # Data Exploration 2 (Cleaned)
