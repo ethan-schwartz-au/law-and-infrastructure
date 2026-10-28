@@ -22,20 +22,35 @@ library(countrycode) # to unify country codes to one format
 ```{r}
 #| label: import-data
 
+## Source: NYU Marron Institute of Urban Management. (2025b, January 27). "Data".
+##         Transit Costs Project. https://transitcosts.com/data/
 transit_data <- read.csv("data/transit_costs_project_data.csv")
 transit_data <- transit_data %>%
   clean_names() # standardizes column name format (lowercase, _ as seperator)
 
+## Source: University of Ottawa. (2008). Alphabetical Index of the Political
+##         Entities and Corresponding Legal Systems . Juriglobe.
+##         https://www.juriglobe.ca/eng/sys-juri/index-alpha.php
+legal_origins_data <- read.csv("data/legal_origins_data.csv")
+legal_origins_data <- legal_origins_data %>%
+  clean_names()
+
+## Source: Hensel, P. R. (2018, November 13). ICOW Colonial History Data.
+##         https://paulhensel.org/icowcol.html
 colonize_data <- read.csv("data/col_data.csv")
 colonize_data <- colonize_data %>%
-  clean_names() 
+  clean_names()
+
+## Source: World Bank Group. (2026, October 8). World development indicators.
+##         DataBank.
+##         https://databank.worldbank.org/source/world-development-indicators
+wb_data <- read.csv("data/wb_gdppp_gov_data.csv")
+wb_data <- wb_data %>%
+  clean_names()
+
 
 wage_data <- read.csv("data/const_wage_data.csv")
 wage_data <- wage_data %>%
-  clean_names()
-
-legal_origins_data <- read.csv("data/legal_origins_data.csv")
-legal_origins_data <- legal_origins_data %>%
   clean_names()
 ```
 
@@ -53,22 +68,11 @@ legal_origins_data <- legal_origins_data %>%
 dim(colonize_data)
 
 summary(colonize_data)
-
 ```
 
 ```{r}
 #| label: wage-data-exploration
 #| eval: False
-
-dim(wage_data)
-
-summary(wage_data)
-
-wage_data %>%
-  distinct(classif1_label)
-
-wage_data %>%
-  distinct(classif2_label)
 ```
 
 # Data Cleaning
@@ -91,9 +95,9 @@ transit_data_1 <- transit_data %>%
 # from countrycode: detects code type
 guess_field(colonize_data$state)
 
-## no iso codes for exctinct nations,
-## may need to hard code succecor state iso codes.
-## Austro-hungarian Empire is the sole colonizer w/out an iso3c code
+#d# no iso codes for exctinct nations,
+#d# may need to hard code succecor state iso codes.
+#d# Austro-hungarian Empire is the sole colonizer w/out an iso3c code
 colonize_data_1 <- colonize_data %>%
   mutate(iso3c = countrycode(state, "cown", "iso3c")) %>%
   relocate(iso3c, .after = state) %>%
@@ -116,7 +120,7 @@ wage_data_1 %>%
   distinct(ref_area_label, time) %>%
   count()
     # Equal to obs count in wage_data_1: there is now only 1 obs per
-    # nation-year combonation
+    # nation-year combanation
 ```
 
 # Data Exploration 2 (Cleaned)
