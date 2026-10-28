@@ -70,17 +70,12 @@ wage_data <- wage_data %>%
 # summary(colonize_data)
 ```
 
-```{r}
-#| label: wage-data-exploration
-#| eval: False
-```
-
 # Data Cleaning
 
 ```{r}
 #| label: transit-data-clean
 
-# From countrycode: detects code type
+# From countrycode: detects country code type
 guess_field(transit_data$country) # iso2c: 97% match
 
 # Add variable that contains the country's iso3c code
@@ -91,9 +86,34 @@ transit_data_1 <- transit_data %>%
 ```
 
 ```{r}
+#| Label: legal-data-clean
+
+# default min = 80%
+guess_field(toupper(legal_origins_data$political_entities), min_similarity = 0)
+# no match, use "country.name"
+
+# Claude (Opus 5.5) code
+legal_origins_data_1 <- legal_origins_data %>%
+  mutate(
+    name_clean = gsub("\\s*\\(minus[^)]*\\)", "", political_entities),
+    name_clean = gsub("\\s+", " ", name_clean),
+    iso3c = countrycode(name_clean, "country.name", "iso3c",
+                        custom_match = c("GUAM (USA)" = "GUM",
+                                         "MARIANA (USA)" = "MNP",
+                                         "SAMOA, AMERICAN (USA)" = "ASM",
+                                         "VIRGIN ISLANDS (USA)" = "VIR",
+                                         "PORTO RICO (ASS. USA)" = "PRI",
+                                         "MICRONESIA" = "FSM",
+                                         "HAWAII (USA)" = NA,
+                                         "LOUISIANA (USA)" = NA,
+                                         "NORTHERN IRELAND (UK)" = NA))) %>%
+  relocate(iso3c, .after = political_entities)
+```
+
+```{r}
 #| label: colonize-data-clean
 
-# From countrycode: detects code type
+# From countrycode: detects country code type
 guess_field(colonize_data$state) # cown: 99% match
 
 #d# no iso codes for exctinct nations,
@@ -103,6 +123,10 @@ guess_field(colonize_data$state) # cown: 99% match
 # Austro-hungarian Empire is the sole colonizer w/out an iso3c code
 # 3 tansit projects are in czechia, colonized by the austro-hungarian empire
 # Using Austria iso3c code: shares a boarder with Czechia (Hungary does not)
+
+# Add variable that contains the country's iso3c code
+# Add variable that contains the colonizor's iso3c code
+# Add variable that contains the ind_from's iso3c code
 colonize_data_1 <- colonize_data %>%
   mutate(iso3c = countrycode(state, "cown", "iso3c")) %>%
   relocate(iso3c, .after = state) %>%
@@ -111,6 +135,13 @@ colonize_data_1 <- colonize_data %>%
   relocate(col_ruler_iso3c, .after = col_ruler) %>%
   mutate(ind_from_iso3c = countrycode(ind_from, "cown", "iso3c")) %>%
   relocate(ind_from_iso3c, .after = ind_from)
+```
+
+```{r}
+#| Label: wb-data-clean
+
+
+
 ```
 
 ```{r}
@@ -136,6 +167,7 @@ wage_data_1 %>%
 #TD# legal origins
 
 #TD# colonize
+    # If not colonized (col_ruler_iso3c is NA), colonial origin = own iso3c
 
 #TD# wb data
 ```

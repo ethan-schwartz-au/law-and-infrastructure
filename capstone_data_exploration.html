@@ -108,8 +108,15 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </header>
 
 
+<section id="setup" class="level1">
+<h1>Setup</h1>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># vector of needed packages</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>pkgs <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"tidyverse"</span>, <span class="st">"janitor"</span>, <span class="st">"countrycode"</span>) </span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="co"># install packages that are on needed list but not on list of installed</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="fu">install.packages</span>(<span class="fu">setdiff</span>(pkgs, <span class="fu">rownames</span>(<span class="fu">installed.packages</span>())))</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>── Attaching core tidyverse packages ──────────────────────── tidyverse 2.0.0 ──
 ✔ dplyr     1.2.1     ✔ readr     2.2.0
@@ -122,7 +129,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 ✖ dplyr::lag()    masks stats::lag()
 ℹ Use the conflicted package (&lt;http://conflicted.r-lib.org/&gt;) to force all conflicts to become errors</code></pre>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(janitor) <span class="co"># to clean column names</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(janitor) <span class="co"># to clean column names via clean_names()</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>
 Attaching package: 'janitor'
@@ -131,113 +138,837 @@ The following objects are masked from 'package:stats':
 
     chisq.test, fisher.test</code></pre>
 </div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(countrycode) <span class="co"># to unify country codes to one format</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>colonize_data <span class="ot">&lt;-</span> <span class="fu">read.csv</span>(<span class="st">"data/coldata110.csv"</span>)</span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>colonize_data <span class="ot">&lt;-</span> colonize_data <span class="sc">%&gt;%</span></span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">clean_names</span>() <span class="co">#standardizes column name format (lowercase, _ as seperator)</span></span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>wage_data <span class="ot">&lt;-</span> <span class="fu">read.csv</span>(<span class="st">"data/const_wage_data.csv"</span>)</span>
-<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>wage_data <span class="ot">&lt;-</span> wage_data <span class="sc">%&gt;%</span></span>
-<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">clean_names</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="do">## Source: NYU Marron Institute of Urban Management. (2025b, January 27). "Data".</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="do">##         Transit Costs Project. https://transitcosts.com/data/</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>transit_data <span class="ot">&lt;-</span> <span class="fu">read.csv</span>(<span class="st">"data/transit_costs_project_data.csv"</span>)</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>transit_data <span class="ot">&lt;-</span> transit_data <span class="sc">%&gt;%</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">clean_names</span>() <span class="co"># standardizes column name format (lowercase, _ as seperator)</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="do">## Source: University of Ottawa. (2008). Alphabetical Index of the Political</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="do">##         Entities and Corresponding Legal Systems . Juriglobe.</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a><span class="do">##         https://www.juriglobe.ca/eng/sys-juri/index-alpha.php</span></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>legal_origins_data <span class="ot">&lt;-</span> <span class="fu">read.csv</span>(<span class="st">"data/legal_origins_data.csv"</span>)</span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>legal_origins_data <span class="ot">&lt;-</span> legal_origins_data <span class="sc">%&gt;%</span></span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">clean_names</span>()</span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a><span class="do">## Source: Hensel, P. R. (2018, November 13). ICOW Colonial History Data.</span></span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a><span class="do">##         https://paulhensel.org/icowcol.html</span></span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>colonize_data <span class="ot">&lt;-</span> <span class="fu">read.csv</span>(<span class="st">"data/col_data.csv"</span>)</span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>colonize_data <span class="ot">&lt;-</span> colonize_data <span class="sc">%&gt;%</span></span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">clean_names</span>()</span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a><span class="do">## Source: World Bank Group. (2026, October 8). World development indicators.</span></span>
+<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a><span class="do">##         DataBank.</span></span>
+<span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a><span class="do">##         https://databank.worldbank.org/source/world-development-indicators</span></span>
+<span id="cb6-23"><a href="#cb6-23" aria-hidden="true" tabindex="-1"></a>wb_data <span class="ot">&lt;-</span> <span class="fu">read.csv</span>(<span class="st">"data/wb_gdppp_gov_data.csv"</span>)</span>
+<span id="cb6-24"><a href="#cb6-24" aria-hidden="true" tabindex="-1"></a>wb_data <span class="ot">&lt;-</span> wb_data <span class="sc">%&gt;%</span></span>
+<span id="cb6-25"><a href="#cb6-25" aria-hidden="true" tabindex="-1"></a>  <span class="fu">clean_names</span>()</span>
+<span id="cb6-26"><a href="#cb6-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-27"><a href="#cb6-27" aria-hidden="true" tabindex="-1"></a><span class="co">#D# might use</span></span>
+<span id="cb6-28"><a href="#cb6-28" aria-hidden="true" tabindex="-1"></a>wage_data <span class="ot">&lt;-</span> <span class="fu">read.csv</span>(<span class="st">"data/const_wage_data.csv"</span>)</span>
+<span id="cb6-29"><a href="#cb6-29" aria-hidden="true" tabindex="-1"></a>wage_data <span class="ot">&lt;-</span> wage_data <span class="sc">%&gt;%</span></span>
+<span id="cb6-30"><a href="#cb6-30" aria-hidden="true" tabindex="-1"></a>  <span class="fu">clean_names</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</section>
+<section id="data-exploration-1-raw" class="level1">
+<h1>Data Exploration 1 (Raw)</h1>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># dim(colonize_data)</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="co"># </span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="co"># summary(colonize_data)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</section>
+<section id="data-cleaning" class="level1">
+<h1>Data Cleaning</h1>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co"># From countrycode: detects country code type</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="fu">guess_field</span>(transit_data<span class="sc">$</span>country) <span class="co"># iso2c: 97% match</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>                               code percent_of_unique_matched
+ecb                             ecb                  96.66667
+eurostat                   eurostat                  96.66667
+genc2c                       genc2c                  96.66667
+iso2c                         iso2c                  96.66667
+cldr.name.bem         cldr.name.bem                  96.66667
+cldr.name.cu           cldr.name.cu                  96.66667
+cldr.name.dua         cldr.name.dua                  96.66667
+cldr.name.gv           cldr.name.gv                  96.66667
+cldr.name.kkj         cldr.name.kkj                  96.66667
+cldr.name.kl           cldr.name.kl                  96.66667
+cldr.name.kw           cldr.name.kw                  96.66667
+cldr.name.mgo         cldr.name.mgo                  96.66667
+cldr.name.nnh         cldr.name.nnh                  96.66667
+cldr.name.rw           cldr.name.rw                  96.66667
+cldr.name.uz_arab cldr.name.uz_arab                  96.66667
+cldr.name.xh           cldr.name.xh                  96.66667
+wb_api2c                   wb_api2c                  95.00000
+cldr.name.pa_arab cldr.name.pa_arab                  95.00000
+cldr.name.lkt         cldr.name.lkt                  85.00000
+cldr.name.bo           cldr.name.bo                  83.33333
+cldr.name.ii           cldr.name.ii                  81.66667
+cldr.name.lrc         cldr.name.lrc                  81.66667
+cldr.name.om           cldr.name.om                  81.66667
+cldr.name.os           cldr.name.os                  81.66667
+cldr.name.mi           cldr.name.mi                  80.00000
+cldr.name.sah         cldr.name.sah                  80.00000
+cldr.short.sah       cldr.short.sah                  80.00000</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Add variable that contains the country's iso3c code</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>transit_data_1 <span class="ot">&lt;-</span> transit_data <span class="sc">%&gt;%</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">iso3c =</span> <span class="fu">countrycode</span>(country, <span class="st">"iso2c"</span>, <span class="st">"iso3c"</span>,</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>                             <span class="at">custom_match =</span> <span class="fu">c</span>(<span class="st">"UK"</span> <span class="ot">=</span> <span class="st">"GBR"</span>, <span class="st">"DR"</span> <span class="ot">=</span> <span class="st">"DOM"</span>))) <span class="sc">%&gt;%</span></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">relocate</span>(iso3c, <span class="at">.after =</span> country)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="cell" data-label="legal-data-clean">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="co"># default min = 80%</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="fu">guess_field</span>(<span class="fu">toupper</span>(legal_origins_data<span class="sc">$</span>political_entities), <span class="at">min_similarity =</span> <span class="dv">0</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>                                                 code percent_of_unique_matched
+ar5                                               ar5                         0
+cctld                                           cctld                         0
+continent                                   continent                         0
+country.name.de                       country.name.de                         0
+country.name.de.regex           country.name.de.regex                         0
+country.name.en                       country.name.en                         0
+country.name.en.regex           country.name.en.regex                         0
+country.name.es                       country.name.es                         0
+country.name.es.regex           country.name.es.regex                         0
+country.name.fr                       country.name.fr                         0
+country.name.fr.regex           country.name.fr.regex                         0
+country.name.it                       country.name.it                         0
+country.name.it.regex           country.name.it.regex                         0
+cow.name                                     cow.name                         0
+cowc                                             cowc                         0
+cown                                             cown                         0
+currency                                     currency                         0
+dhs                                               dhs                         0
+ecb                                               ecb                         0
+eu27                                             eu27                         0
+eu28                                             eu28                         0
+eurocontrol_pru                       eurocontrol_pru                         0
+eurocontrol_statfor               eurocontrol_statfor                         0
+eurostat                                     eurostat                         0
+fao                                               fao                         0
+fips                                             fips                         0
+gaul                                             gaul                         0
+genc2c                                         genc2c                         0
+genc3c                                         genc3c                         0
+genc3n                                         genc3n                         0
+gwc                                               gwc                         0
+gwn                                               gwn                         0
+icao.region                               icao.region                         0
+imf                                               imf                         0
+ioc                                               ioc                         0
+iso.name.en                               iso.name.en                         0
+iso.name.fr                               iso.name.fr                         0
+iso2c                                           iso2c                         0
+iso3c                                           iso3c                         0
+iso3n                                           iso3n                         0
+iso4217c                                     iso4217c                         0
+iso4217n                                     iso4217n                         0
+p4.name                                       p4.name                         0
+p4c                                               p4c                         0
+p4n                                               p4n                         0
+p5c                                               p5c                         0
+p5n                                               p5n                         0
+region                                         region                         0
+region23                                     region23                         0
+telephone                                   telephone                         0
+un                                                 un                         0
+un.name.ar                                 un.name.ar                         0
+un.name.en                                 un.name.en                         0
+un.name.es                                 un.name.es                         0
+un.name.fr                                 un.name.fr                         0
+un.name.ru                                 un.name.ru                         0
+un.name.zh                                 un.name.zh                         0
+un.region.code                         un.region.code                         0
+un.region.name                         un.region.name                         0
+un.regionintermediate.code un.regionintermediate.code                         0
+un.regionintermediate.name un.regionintermediate.name                         0
+un.regionsub.code                   un.regionsub.code                         0
+un.regionsub.name                   un.regionsub.name                         0
+unhcr                                           unhcr                         0
+unhcr.region                             unhcr.region                         0
+unicode.symbol                         unicode.symbol                         0
+unpd                                             unpd                         0
+vdem                                             vdem                         0
+vdem.name                                   vdem.name                         0
+wb                                                 wb                         0
+wb_api2c                                     wb_api2c                         0
+wb_api3c                                     wb_api3c                         0
+wvs                                               wvs                         0
+cldr.name.af                             cldr.name.af                         0
+cldr.name.agq                           cldr.name.agq                         0
+cldr.name.ak                             cldr.name.ak                         0
+cldr.name.am                             cldr.name.am                         0
+cldr.name.ar                             cldr.name.ar                         0
+cldr.name.ar_ly                       cldr.name.ar_ly                         0
+cldr.name.ar_sa                       cldr.name.ar_sa                         0
+cldr.name.as                             cldr.name.as                         0
+cldr.name.asa                           cldr.name.asa                         0
+cldr.name.ast                           cldr.name.ast                         0
+cldr.name.az                             cldr.name.az                         0
+cldr.name.az_cyrl                   cldr.name.az_cyrl                         0
+cldr.name.bas                           cldr.name.bas                         0
+cldr.name.be                             cldr.name.be                         0
+cldr.name.bem                           cldr.name.bem                         0
+cldr.name.bez                           cldr.name.bez                         0
+cldr.name.bg                             cldr.name.bg                         0
+cldr.name.bm                             cldr.name.bm                         0
+cldr.name.bn                             cldr.name.bn                         0
+cldr.name.bo                             cldr.name.bo                         0
+cldr.name.br                             cldr.name.br                         0
+cldr.name.brx                           cldr.name.brx                         0
+cldr.name.bs                             cldr.name.bs                         0
+cldr.name.bs_cyrl                   cldr.name.bs_cyrl                         0
+cldr.name.ca                             cldr.name.ca                         0
+cldr.name.ccp                           cldr.name.ccp                         0
+cldr.name.ce                             cldr.name.ce                         0
+cldr.name.ceb                           cldr.name.ceb                         0
+cldr.name.cgg                           cldr.name.cgg                         0
+cldr.name.chr                           cldr.name.chr                         0
+cldr.name.ckb                           cldr.name.ckb                         0
+cldr.name.cs                             cldr.name.cs                         0
+cldr.name.cu                             cldr.name.cu                         0
+cldr.name.cy                             cldr.name.cy                         0
+cldr.name.da                             cldr.name.da                         0
+cldr.name.dav                           cldr.name.dav                         0
+cldr.name.de                             cldr.name.de                         0
+cldr.name.de_at                       cldr.name.de_at                         0
+cldr.name.de_ch                       cldr.name.de_ch                         0
+cldr.name.dje                           cldr.name.dje                         0
+cldr.name.dsb                           cldr.name.dsb                         0
+cldr.name.dua                           cldr.name.dua                         0
+cldr.name.dyo                           cldr.name.dyo                         0
+cldr.name.dz                             cldr.name.dz                         0
+cldr.name.ee                             cldr.name.ee                         0
+cldr.name.el                             cldr.name.el                         0
+cldr.name.en                             cldr.name.en                         0
+cldr.name.en_001                     cldr.name.en_001                         0
+cldr.name.en_au                       cldr.name.en_au                         0
+cldr.name.eo                             cldr.name.eo                         0
+cldr.name.es                             cldr.name.es                         0
+cldr.name.es_419                     cldr.name.es_419                         0
+cldr.name.es_ar                       cldr.name.es_ar                         0
+cldr.name.es_cl                       cldr.name.es_cl                         0
+cldr.name.es_mx                       cldr.name.es_mx                         0
+cldr.name.es_us                       cldr.name.es_us                         0
+cldr.name.et                             cldr.name.et                         0
+cldr.name.eu                             cldr.name.eu                         0
+cldr.name.ewo                           cldr.name.ewo                         0
+cldr.name.fa                             cldr.name.fa                         0
+cldr.name.fa_af                       cldr.name.fa_af                         0
+cldr.name.ff                             cldr.name.ff                         0
+cldr.name.fi                             cldr.name.fi                         0
+cldr.name.fil                           cldr.name.fil                         0
+cldr.name.fo                             cldr.name.fo                         0
+cldr.name.fr                             cldr.name.fr                         0
+cldr.name.fr_be                       cldr.name.fr_be                         0
+cldr.name.fr_ca                       cldr.name.fr_ca                         0
+cldr.name.fur                           cldr.name.fur                         0
+cldr.name.fy                             cldr.name.fy                         0
+cldr.name.ga                             cldr.name.ga                         0
+cldr.name.gd                             cldr.name.gd                         0
+cldr.name.gl                             cldr.name.gl                         0
+cldr.name.gsw                           cldr.name.gsw                         0
+cldr.name.gu                             cldr.name.gu                         0
+cldr.name.gv                             cldr.name.gv                         0
+cldr.name.ha                             cldr.name.ha                         0
+cldr.name.haw                           cldr.name.haw                         0
+cldr.name.he                             cldr.name.he                         0
+cldr.name.hi                             cldr.name.hi                         0
+cldr.name.hr                             cldr.name.hr                         0
+cldr.name.hsb                           cldr.name.hsb                         0
+cldr.name.hu                             cldr.name.hu                         0
+cldr.name.hy                             cldr.name.hy                         0
+cldr.name.ia                             cldr.name.ia                         0
+cldr.name.id                             cldr.name.id                         0
+cldr.name.ig                             cldr.name.ig                         0
+cldr.name.ii                             cldr.name.ii                         0
+cldr.name.is                             cldr.name.is                         0
+cldr.name.it                             cldr.name.it                         0
+cldr.name.ja                             cldr.name.ja                         0
+cldr.name.jgo                           cldr.name.jgo                         0
+cldr.name.jv                             cldr.name.jv                         0
+cldr.name.ka                             cldr.name.ka                         0
+cldr.name.kab                           cldr.name.kab                         0
+cldr.name.kam                           cldr.name.kam                         0
+cldr.name.kde                           cldr.name.kde                         0
+cldr.name.kea                           cldr.name.kea                         0
+cldr.name.khq                           cldr.name.khq                         0
+cldr.name.ki                             cldr.name.ki                         0
+cldr.name.kk                             cldr.name.kk                         0
+cldr.name.kkj                           cldr.name.kkj                         0
+cldr.name.kl                             cldr.name.kl                         0
+cldr.name.kln                           cldr.name.kln                         0
+cldr.name.km                             cldr.name.km                         0
+cldr.name.kn                             cldr.name.kn                         0
+cldr.name.ko                             cldr.name.ko                         0
+cldr.name.ko_kp                       cldr.name.ko_kp                         0
+cldr.name.kok                           cldr.name.kok                         0
+cldr.name.ks                             cldr.name.ks                         0
+cldr.name.ksb                           cldr.name.ksb                         0
+cldr.name.ksf                           cldr.name.ksf                         0
+cldr.name.ksh                           cldr.name.ksh                         0
+cldr.name.ku                             cldr.name.ku                         0
+cldr.name.kw                             cldr.name.kw                         0
+cldr.name.ky                             cldr.name.ky                         0
+cldr.name.lag                           cldr.name.lag                         0
+cldr.name.lb                             cldr.name.lb                         0
+cldr.name.lg                             cldr.name.lg                         0
+cldr.name.lkt                           cldr.name.lkt                         0
+cldr.name.ln                             cldr.name.ln                         0
+cldr.name.lo                             cldr.name.lo                         0
+cldr.name.lrc                           cldr.name.lrc                         0
+cldr.name.lt                             cldr.name.lt                         0
+cldr.name.lu                             cldr.name.lu                         0
+cldr.name.luo                           cldr.name.luo                         0
+cldr.name.luy                           cldr.name.luy                         0
+cldr.name.lv                             cldr.name.lv                         0
+cldr.name.mas                           cldr.name.mas                         0
+cldr.name.mer                           cldr.name.mer                         0
+cldr.name.mfe                           cldr.name.mfe                         0
+cldr.name.mg                             cldr.name.mg                         0
+cldr.name.mgh                           cldr.name.mgh                         0
+cldr.name.mgo                           cldr.name.mgo                         0
+cldr.name.mi                             cldr.name.mi                         0
+cldr.name.mk                             cldr.name.mk                         0
+cldr.name.ml                             cldr.name.ml                         0
+cldr.name.mn                             cldr.name.mn                         0
+cldr.name.mr                             cldr.name.mr                         0
+cldr.name.ms                             cldr.name.ms                         0
+cldr.name.mt                             cldr.name.mt                         0
+cldr.name.mua                           cldr.name.mua                         0
+cldr.name.my                             cldr.name.my                         0
+cldr.name.mzn                           cldr.name.mzn                         0
+cldr.name.naq                           cldr.name.naq                         0
+cldr.name.nb                             cldr.name.nb                         0
+cldr.name.nd                             cldr.name.nd                         0
+cldr.name.ne                             cldr.name.ne                         0
+cldr.name.nl                             cldr.name.nl                         0
+cldr.name.nmg                           cldr.name.nmg                         0
+cldr.name.nn                             cldr.name.nn                         0
+cldr.name.nnh                           cldr.name.nnh                         0
+cldr.name.nus                           cldr.name.nus                         0
+cldr.name.nyn                           cldr.name.nyn                         0
+cldr.name.om                             cldr.name.om                         0
+cldr.name.or                             cldr.name.or                         0
+cldr.name.os                             cldr.name.os                         0
+cldr.name.pa                             cldr.name.pa                         0
+cldr.name.pa_arab                   cldr.name.pa_arab                         0
+cldr.name.pl                             cldr.name.pl                         0
+cldr.name.ps                             cldr.name.ps                         0
+cldr.name.ps_pk                       cldr.name.ps_pk                         0
+cldr.name.pt                             cldr.name.pt                         0
+cldr.name.pt_ao                       cldr.name.pt_ao                         0
+cldr.name.qu                             cldr.name.qu                         0
+cldr.name.rm                             cldr.name.rm                         0
+cldr.name.rn                             cldr.name.rn                         0
+cldr.name.ro                             cldr.name.ro                         0
+cldr.name.ro_md                       cldr.name.ro_md                         0
+cldr.name.rof                           cldr.name.rof                         0
+cldr.name.ru                             cldr.name.ru                         0
+cldr.name.ru_ua                       cldr.name.ru_ua                         0
+cldr.name.rw                             cldr.name.rw                         0
+cldr.name.sah                           cldr.name.sah                         0
+cldr.name.sbp                           cldr.name.sbp                         0
+cldr.name.sd                             cldr.name.sd                         0
+cldr.name.se                             cldr.name.se                         0
+cldr.name.se_fi                       cldr.name.se_fi                         0
+cldr.name.seh                           cldr.name.seh                         0
+cldr.name.sg                             cldr.name.sg                         0
+cldr.name.shi                           cldr.name.shi                         0
+cldr.name.shi_latn                 cldr.name.shi_latn                         0
+cldr.name.si                             cldr.name.si                         0
+cldr.name.sk                             cldr.name.sk                         0
+cldr.name.sl                             cldr.name.sl                         0
+cldr.name.smn                           cldr.name.smn                         0
+cldr.name.sn                             cldr.name.sn                         0
+cldr.name.so                             cldr.name.so                         0
+cldr.name.sq                             cldr.name.sq                         0
+cldr.name.sr                             cldr.name.sr                         0
+cldr.name.sr_cyrl_ba             cldr.name.sr_cyrl_ba                         0
+cldr.name.sr_cyrl_me             cldr.name.sr_cyrl_me                         0
+cldr.name.sr_cyrl_xk             cldr.name.sr_cyrl_xk                         0
+cldr.name.sr_latn                   cldr.name.sr_latn                         0
+cldr.name.sr_latn_ba             cldr.name.sr_latn_ba                         0
+cldr.name.sr_latn_me             cldr.name.sr_latn_me                         0
+cldr.name.sr_latn_xk             cldr.name.sr_latn_xk                         0
+cldr.name.sv                             cldr.name.sv                         0
+cldr.name.sw                             cldr.name.sw                         0
+cldr.name.sw_cd                       cldr.name.sw_cd                         0
+cldr.name.sw_ke                       cldr.name.sw_ke                         0
+cldr.name.ta                             cldr.name.ta                         0
+cldr.name.te                             cldr.name.te                         0
+cldr.name.teo                           cldr.name.teo                         0
+cldr.name.tg                             cldr.name.tg                         0
+cldr.name.th                             cldr.name.th                         0
+cldr.name.ti                             cldr.name.ti                         0
+cldr.name.tk                             cldr.name.tk                         0
+cldr.name.to                             cldr.name.to                         0
+cldr.name.tr                             cldr.name.tr                         0
+cldr.name.tt                             cldr.name.tt                         0
+cldr.name.twq                           cldr.name.twq                         0
+cldr.name.tzm                           cldr.name.tzm                         0
+cldr.name.ug                             cldr.name.ug                         0
+cldr.name.uk                             cldr.name.uk                         0
+cldr.name.ur                             cldr.name.ur                         0
+cldr.name.ur_in                       cldr.name.ur_in                         0
+cldr.name.uz                             cldr.name.uz                         0
+cldr.name.uz_arab                   cldr.name.uz_arab                         0
+cldr.name.uz_cyrl                   cldr.name.uz_cyrl                         0
+cldr.name.vai                           cldr.name.vai                         0
+cldr.name.vai_latn                 cldr.name.vai_latn                         0
+cldr.name.vi                             cldr.name.vi                         0
+cldr.name.wae                           cldr.name.wae                         0
+cldr.name.wo                             cldr.name.wo                         0
+cldr.name.xh                             cldr.name.xh                         0
+cldr.name.xog                           cldr.name.xog                         0
+cldr.name.yav                           cldr.name.yav                         0
+cldr.name.yi                             cldr.name.yi                         0
+cldr.name.yo                             cldr.name.yo                         0
+cldr.name.yo_bj                       cldr.name.yo_bj                         0
+cldr.name.yue                           cldr.name.yue                         0
+cldr.name.yue_hans                 cldr.name.yue_hans                         0
+cldr.name.zgh                           cldr.name.zgh                         0
+cldr.name.zh                             cldr.name.zh                         0
+cldr.name.zh_hant                   cldr.name.zh_hant                         0
+cldr.name.zh_hant_hk             cldr.name.zh_hant_hk                         0
+cldr.name.zu                             cldr.name.zu                         0
+cldr.short.af                           cldr.short.af                         0
+cldr.short.am                           cldr.short.am                         0
+cldr.short.ar                           cldr.short.ar                         0
+cldr.short.ar_ly                     cldr.short.ar_ly                         0
+cldr.short.ar_sa                     cldr.short.ar_sa                         0
+cldr.short.as                           cldr.short.as                         0
+cldr.short.ast                         cldr.short.ast                         0
+cldr.short.az                           cldr.short.az                         0
+cldr.short.az_cyrl                 cldr.short.az_cyrl                         0
+cldr.short.be                           cldr.short.be                         0
+cldr.short.bg                           cldr.short.bg                         0
+cldr.short.bn                           cldr.short.bn                         0
+cldr.short.br                           cldr.short.br                         0
+cldr.short.bs                           cldr.short.bs                         0
+cldr.short.bs_cyrl                 cldr.short.bs_cyrl                         0
+cldr.short.ca                           cldr.short.ca                         0
+cldr.short.ccp                         cldr.short.ccp                         0
+cldr.short.ce                           cldr.short.ce                         0
+cldr.short.ceb                         cldr.short.ceb                         0
+cldr.short.chr                         cldr.short.chr                         0
+cldr.short.ckb                         cldr.short.ckb                         0
+cldr.short.cs                           cldr.short.cs                         0
+cldr.short.cy                           cldr.short.cy                         0
+cldr.short.da                           cldr.short.da                         0
+cldr.short.de                           cldr.short.de                         0
+cldr.short.de_at                     cldr.short.de_at                         0
+cldr.short.de_ch                     cldr.short.de_ch                         0
+cldr.short.dsb                         cldr.short.dsb                         0
+cldr.short.dz                           cldr.short.dz                         0
+cldr.short.ee                           cldr.short.ee                         0
+cldr.short.el                           cldr.short.el                         0
+cldr.short.en                           cldr.short.en                         0
+cldr.short.en_001                   cldr.short.en_001                         0
+cldr.short.en_au                     cldr.short.en_au                         0
+cldr.short.es                           cldr.short.es                         0
+cldr.short.es_419                   cldr.short.es_419                         0
+cldr.short.es_ar                     cldr.short.es_ar                         0
+cldr.short.es_cl                     cldr.short.es_cl                         0
+cldr.short.es_mx                     cldr.short.es_mx                         0
+cldr.short.es_us                     cldr.short.es_us                         0
+cldr.short.et                           cldr.short.et                         0
+cldr.short.eu                           cldr.short.eu                         0
+cldr.short.fa                           cldr.short.fa                         0
+cldr.short.fa_af                     cldr.short.fa_af                         0
+cldr.short.fi                           cldr.short.fi                         0
+cldr.short.fil                         cldr.short.fil                         0
+cldr.short.fo                           cldr.short.fo                         0
+cldr.short.fr                           cldr.short.fr                         0
+cldr.short.fr_be                     cldr.short.fr_be                         0
+cldr.short.fr_ca                     cldr.short.fr_ca                         0
+cldr.short.fur                         cldr.short.fur                         0
+cldr.short.fy                           cldr.short.fy                         0
+cldr.short.ga                           cldr.short.ga                         0
+cldr.short.gd                           cldr.short.gd                         0
+cldr.short.gl                           cldr.short.gl                         0
+cldr.short.gsw                         cldr.short.gsw                         0
+cldr.short.gu                           cldr.short.gu                         0
+cldr.short.he                           cldr.short.he                         0
+cldr.short.hi                           cldr.short.hi                         0
+cldr.short.hr                           cldr.short.hr                         0
+cldr.short.hsb                         cldr.short.hsb                         0
+cldr.short.hu                           cldr.short.hu                         0
+cldr.short.hy                           cldr.short.hy                         0
+cldr.short.ia                           cldr.short.ia                         0
+cldr.short.id                           cldr.short.id                         0
+cldr.short.ig                           cldr.short.ig                         0
+cldr.short.is                           cldr.short.is                         0
+cldr.short.it                           cldr.short.it                         0
+cldr.short.ja                           cldr.short.ja                         0
+cldr.short.jv                           cldr.short.jv                         0
+cldr.short.ka                           cldr.short.ka                         0
+cldr.short.kea                         cldr.short.kea                         0
+cldr.short.kk                           cldr.short.kk                         0
+cldr.short.km                           cldr.short.km                         0
+cldr.short.kn                           cldr.short.kn                         0
+cldr.short.ko                           cldr.short.ko                         0
+cldr.short.ko_kp                     cldr.short.ko_kp                         0
+cldr.short.kok                         cldr.short.kok                         0
+cldr.short.ksh                         cldr.short.ksh                         0
+cldr.short.ku                           cldr.short.ku                         0
+cldr.short.ky                           cldr.short.ky                         0
+cldr.short.lb                           cldr.short.lb                         0
+cldr.short.lo                           cldr.short.lo                         0
+cldr.short.lt                           cldr.short.lt                         0
+cldr.short.lv                           cldr.short.lv                         0
+cldr.short.mk                           cldr.short.mk                         0
+cldr.short.ml                           cldr.short.ml                         0
+cldr.short.mn                           cldr.short.mn                         0
+cldr.short.mr                           cldr.short.mr                         0
+cldr.short.ms                           cldr.short.ms                         0
+cldr.short.mt                           cldr.short.mt                         0
+cldr.short.my                           cldr.short.my                         0
+cldr.short.mzn                         cldr.short.mzn                         0
+cldr.short.nb                           cldr.short.nb                         0
+cldr.short.ne                           cldr.short.ne                         0
+cldr.short.nl                           cldr.short.nl                         0
+cldr.short.nn                           cldr.short.nn                         0
+cldr.short.or                           cldr.short.or                         0
+cldr.short.pa                           cldr.short.pa                         0
+cldr.short.pl                           cldr.short.pl                         0
+cldr.short.ps                           cldr.short.ps                         0
+cldr.short.ps_pk                     cldr.short.ps_pk                         0
+cldr.short.pt                           cldr.short.pt                         0
+cldr.short.pt_ao                     cldr.short.pt_ao                         0
+cldr.short.ro                           cldr.short.ro                         0
+cldr.short.ro_md                     cldr.short.ro_md                         0
+cldr.short.ru                           cldr.short.ru                         0
+cldr.short.ru_ua                     cldr.short.ru_ua                         0
+cldr.short.sah                         cldr.short.sah                         0
+cldr.short.sd                           cldr.short.sd                         0
+cldr.short.se                           cldr.short.se                         0
+cldr.short.se_fi                     cldr.short.se_fi                         0
+cldr.short.si                           cldr.short.si                         0
+cldr.short.sk                           cldr.short.sk                         0
+cldr.short.sl                           cldr.short.sl                         0
+cldr.short.smn                         cldr.short.smn                         0
+cldr.short.so                           cldr.short.so                         0
+cldr.short.sq                           cldr.short.sq                         0
+cldr.short.sr                           cldr.short.sr                         0
+cldr.short.sr_cyrl_ba           cldr.short.sr_cyrl_ba                         0
+cldr.short.sr_cyrl_me           cldr.short.sr_cyrl_me                         0
+cldr.short.sr_cyrl_xk           cldr.short.sr_cyrl_xk                         0
+cldr.short.sr_latn                 cldr.short.sr_latn                         0
+cldr.short.sr_latn_ba           cldr.short.sr_latn_ba                         0
+cldr.short.sr_latn_me           cldr.short.sr_latn_me                         0
+cldr.short.sr_latn_xk           cldr.short.sr_latn_xk                         0
+cldr.short.sv                           cldr.short.sv                         0
+cldr.short.sw                           cldr.short.sw                         0
+cldr.short.sw_cd                     cldr.short.sw_cd                         0
+cldr.short.sw_ke                     cldr.short.sw_ke                         0
+cldr.short.ta                           cldr.short.ta                         0
+cldr.short.te                           cldr.short.te                         0
+cldr.short.tg                           cldr.short.tg                         0
+cldr.short.th                           cldr.short.th                         0
+cldr.short.ti                           cldr.short.ti                         0
+cldr.short.tk                           cldr.short.tk                         0
+cldr.short.to                           cldr.short.to                         0
+cldr.short.tr                           cldr.short.tr                         0
+cldr.short.tt                           cldr.short.tt                         0
+cldr.short.ug                           cldr.short.ug                         0
+cldr.short.uk                           cldr.short.uk                         0
+cldr.short.ur                           cldr.short.ur                         0
+cldr.short.ur_in                     cldr.short.ur_in                         0
+cldr.short.uz                           cldr.short.uz                         0
+cldr.short.uz_cyrl                 cldr.short.uz_cyrl                         0
+cldr.short.vai                         cldr.short.vai                         0
+cldr.short.vi                           cldr.short.vi                         0
+cldr.short.wae                         cldr.short.wae                         0
+cldr.short.wo                           cldr.short.wo                         0
+cldr.short.yi                           cldr.short.yi                         0
+cldr.short.yo                           cldr.short.yo                         0
+cldr.short.yo_bj                     cldr.short.yo_bj                         0
+cldr.short.yue                         cldr.short.yue                         0
+cldr.short.yue_hans               cldr.short.yue_hans                         0
+cldr.short.zh                           cldr.short.zh                         0
+cldr.short.zh_hant                 cldr.short.zh_hant                         0
+cldr.short.zh_hant_hk           cldr.short.zh_hant_hk                         0
+cldr.short.zu                           cldr.short.zu                         0
+cldr.variant.af                       cldr.variant.af                         0
+cldr.variant.am                       cldr.variant.am                         0
+cldr.variant.ar                       cldr.variant.ar                         0
+cldr.variant.ar_ae                 cldr.variant.ar_ae                         0
+cldr.variant.ar_ly                 cldr.variant.ar_ly                         0
+cldr.variant.ar_sa                 cldr.variant.ar_sa                         0
+cldr.variant.as                       cldr.variant.as                         0
+cldr.variant.ast                     cldr.variant.ast                         0
+cldr.variant.az                       cldr.variant.az                         0
+cldr.variant.az_cyrl             cldr.variant.az_cyrl                         0
+cldr.variant.be                       cldr.variant.be                         0
+cldr.variant.bg                       cldr.variant.bg                         0
+cldr.variant.bn                       cldr.variant.bn                         0
+cldr.variant.bn_in                 cldr.variant.bn_in                         0
+cldr.variant.br                       cldr.variant.br                         0
+cldr.variant.bs                       cldr.variant.bs                         0
+cldr.variant.bs_cyrl             cldr.variant.bs_cyrl                         0
+cldr.variant.ca                       cldr.variant.ca                         0
+cldr.variant.ccp                     cldr.variant.ccp                         0
+cldr.variant.ce                       cldr.variant.ce                         0
+cldr.variant.ceb                     cldr.variant.ceb                         0
+cldr.variant.chr                     cldr.variant.chr                         0
+cldr.variant.ckb                     cldr.variant.ckb                         0
+cldr.variant.cs                       cldr.variant.cs                         0
+cldr.variant.cy                       cldr.variant.cy                         0
+cldr.variant.da                       cldr.variant.da                         0
+cldr.variant.de                       cldr.variant.de                         0
+cldr.variant.de_at                 cldr.variant.de_at                         0
+cldr.variant.de_ch                 cldr.variant.de_ch                         0
+cldr.variant.dsb                     cldr.variant.dsb                         0
+cldr.variant.dz                       cldr.variant.dz                         0
+cldr.variant.ee                       cldr.variant.ee                         0
+cldr.variant.el                       cldr.variant.el                         0
+cldr.variant.en                       cldr.variant.en                         0
+cldr.variant.en_001               cldr.variant.en_001                         0
+cldr.variant.en_au                 cldr.variant.en_au                         0
+cldr.variant.es                       cldr.variant.es                         0
+cldr.variant.es_419               cldr.variant.es_419                         0
+cldr.variant.es_ar                 cldr.variant.es_ar                         0
+cldr.variant.es_cl                 cldr.variant.es_cl                         0
+cldr.variant.es_mx                 cldr.variant.es_mx                         0
+cldr.variant.es_us                 cldr.variant.es_us                         0
+cldr.variant.et                       cldr.variant.et                         0
+cldr.variant.eu                       cldr.variant.eu                         0
+cldr.variant.fa                       cldr.variant.fa                         0
+cldr.variant.fa_af                 cldr.variant.fa_af                         0
+cldr.variant.fi                       cldr.variant.fi                         0
+cldr.variant.fil                     cldr.variant.fil                         0
+cldr.variant.fo                       cldr.variant.fo                         0
+cldr.variant.fr                       cldr.variant.fr                         0
+cldr.variant.fr_be                 cldr.variant.fr_be                         0
+cldr.variant.fr_ca                 cldr.variant.fr_ca                         0
+cldr.variant.fur                     cldr.variant.fur                         0
+cldr.variant.fy                       cldr.variant.fy                         0
+cldr.variant.ga                       cldr.variant.ga                         0
+cldr.variant.gd                       cldr.variant.gd                         0
+cldr.variant.gl                       cldr.variant.gl                         0
+cldr.variant.gu                       cldr.variant.gu                         0
+cldr.variant.ha                       cldr.variant.ha                         0
+cldr.variant.he                       cldr.variant.he                         0
+cldr.variant.hi                       cldr.variant.hi                         0
+cldr.variant.hr                       cldr.variant.hr                         0
+cldr.variant.hsb                     cldr.variant.hsb                         0
+cldr.variant.hu                       cldr.variant.hu                         0
+cldr.variant.hy                       cldr.variant.hy                         0
+cldr.variant.ia                       cldr.variant.ia                         0
+cldr.variant.id                       cldr.variant.id                         0
+cldr.variant.ig                       cldr.variant.ig                         0
+cldr.variant.is                       cldr.variant.is                         0
+cldr.variant.it                       cldr.variant.it                         0
+cldr.variant.ja                       cldr.variant.ja                         0
+cldr.variant.jv                       cldr.variant.jv                         0
+cldr.variant.ka                       cldr.variant.ka                         0
+cldr.variant.kea                     cldr.variant.kea                         0
+cldr.variant.kk                       cldr.variant.kk                         0
+cldr.variant.km                       cldr.variant.km                         0
+cldr.variant.kn                       cldr.variant.kn                         0
+cldr.variant.ko                       cldr.variant.ko                         0
+cldr.variant.ko_kp                 cldr.variant.ko_kp                         0
+cldr.variant.kok                     cldr.variant.kok                         0
+cldr.variant.ksh                     cldr.variant.ksh                         0
+cldr.variant.ku                       cldr.variant.ku                         0
+cldr.variant.ky                       cldr.variant.ky                         0
+cldr.variant.lb                       cldr.variant.lb                         0
+cldr.variant.ln                       cldr.variant.ln                         0
+cldr.variant.lo                       cldr.variant.lo                         0
+cldr.variant.lt                       cldr.variant.lt                         0
+cldr.variant.lv                       cldr.variant.lv                         0
+cldr.variant.mk                       cldr.variant.mk                         0
+cldr.variant.ml                       cldr.variant.ml                         0
+cldr.variant.mn                       cldr.variant.mn                         0
+cldr.variant.mr                       cldr.variant.mr                         0
+cldr.variant.ms                       cldr.variant.ms                         0
+cldr.variant.mt                       cldr.variant.mt                         0
+cldr.variant.my                       cldr.variant.my                         0
+cldr.variant.mzn                     cldr.variant.mzn                         0
+cldr.variant.nb                       cldr.variant.nb                         0
+cldr.variant.ne                       cldr.variant.ne                         0
+cldr.variant.nl                       cldr.variant.nl                         0
+cldr.variant.nn                       cldr.variant.nn                         0
+cldr.variant.or                       cldr.variant.or                         0
+cldr.variant.pa                       cldr.variant.pa                         0
+cldr.variant.pl                       cldr.variant.pl                         0
+cldr.variant.ps                       cldr.variant.ps                         0
+cldr.variant.ps_pk                 cldr.variant.ps_pk                         0
+cldr.variant.pt                       cldr.variant.pt                         0
+cldr.variant.pt_ao                 cldr.variant.pt_ao                         0
+cldr.variant.qu                       cldr.variant.qu                         0
+cldr.variant.ro                       cldr.variant.ro                         0
+cldr.variant.ro_md                 cldr.variant.ro_md                         0
+cldr.variant.ru                       cldr.variant.ru                         0
+cldr.variant.ru_ua                 cldr.variant.ru_ua                         0
+cldr.variant.sd                       cldr.variant.sd                         0
+cldr.variant.se_fi                 cldr.variant.se_fi                         0
+cldr.variant.si                       cldr.variant.si                         0
+cldr.variant.sk                       cldr.variant.sk                         0
+cldr.variant.sl                       cldr.variant.sl                         0
+cldr.variant.smn                     cldr.variant.smn                         0
+cldr.variant.so                       cldr.variant.so                         0
+cldr.variant.sq                       cldr.variant.sq                         0
+cldr.variant.sr                       cldr.variant.sr                         0
+cldr.variant.sr_cyrl_ba       cldr.variant.sr_cyrl_ba                         0
+cldr.variant.sr_cyrl_me       cldr.variant.sr_cyrl_me                         0
+cldr.variant.sr_cyrl_xk       cldr.variant.sr_cyrl_xk                         0
+cldr.variant.sr_latn             cldr.variant.sr_latn                         0
+cldr.variant.sr_latn_ba       cldr.variant.sr_latn_ba                         0
+cldr.variant.sr_latn_me       cldr.variant.sr_latn_me                         0
+cldr.variant.sr_latn_xk       cldr.variant.sr_latn_xk                         0
+cldr.variant.sv                       cldr.variant.sv                         0
+cldr.variant.sw                       cldr.variant.sw                         0
+cldr.variant.sw_cd                 cldr.variant.sw_cd                         0
+cldr.variant.sw_ke                 cldr.variant.sw_ke                         0
+cldr.variant.ta                       cldr.variant.ta                         0
+cldr.variant.te                       cldr.variant.te                         0
+cldr.variant.tg                       cldr.variant.tg                         0
+cldr.variant.th                       cldr.variant.th                         0
+cldr.variant.ti                       cldr.variant.ti                         0
+cldr.variant.tk                       cldr.variant.tk                         0
+cldr.variant.to                       cldr.variant.to                         0
+cldr.variant.tr                       cldr.variant.tr                         0
+cldr.variant.tt                       cldr.variant.tt                         0
+cldr.variant.ug                       cldr.variant.ug                         0
+cldr.variant.uk                       cldr.variant.uk                         0
+cldr.variant.ur                       cldr.variant.ur                         0
+cldr.variant.ur_in                 cldr.variant.ur_in                         0
+cldr.variant.uz                       cldr.variant.uz                         0
+cldr.variant.uz_cyrl             cldr.variant.uz_cyrl                         0
+cldr.variant.vi                       cldr.variant.vi                         0
+cldr.variant.wae                     cldr.variant.wae                         0
+cldr.variant.wo                       cldr.variant.wo                         0
+cldr.variant.yi                       cldr.variant.yi                         0
+cldr.variant.yo                       cldr.variant.yo                         0
+cldr.variant.yo_bj                 cldr.variant.yo_bj                         0
+cldr.variant.yue                     cldr.variant.yue                         0
+cldr.variant.yue_hans           cldr.variant.yue_hans                         0
+cldr.variant.zh                       cldr.variant.zh                         0
+cldr.variant.zh_hant             cldr.variant.zh_hant                         0
+cldr.variant.zh_hant_hk       cldr.variant.zh_hant_hk                         0
+cldr.variant.zu                       cldr.variant.zu                         0</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="co"># no match, use "country.name"</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>legal_origins_data_1 <span class="ot">&lt;-</span> legal_origins_data <span class="sc">%&gt;%</span></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">name_clean =</span> <span class="fu">gsub</span>(<span class="st">"</span><span class="sc">\\</span><span class="st">s*</span><span class="sc">\\</span><span class="st">(minus[^)]*</span><span class="sc">\\</span><span class="st">)"</span>, <span class="st">""</span>, political_entities),</span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">name_clean =</span> <span class="fu">gsub</span>(<span class="st">"</span><span class="sc">\\</span><span class="st">s+"</span>, <span class="st">" "</span>, name_clean),</span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">iso3c =</span> <span class="fu">countrycode</span>(name_clean, <span class="st">"country.name"</span>, <span class="st">"iso3c"</span>,</span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a>                        <span class="at">custom_match =</span> <span class="fu">c</span>(<span class="st">"GUAM (USA)"</span> <span class="ot">=</span> <span class="st">"GUM"</span>,</span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a>                                         <span class="st">"MARIANA (USA)"</span> <span class="ot">=</span> <span class="st">"MNP"</span>,</span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a>                                         <span class="st">"SAMOA, AMERICAN (USA)"</span> <span class="ot">=</span> <span class="st">"ASM"</span>,</span>
+<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a>                                         <span class="st">"VIRGIN ISLANDS (USA)"</span> <span class="ot">=</span> <span class="st">"VIR"</span>,</span>
+<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a>                                         <span class="st">"PORTO RICO (ASS. USA)"</span> <span class="ot">=</span> <span class="st">"PRI"</span>,</span>
+<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a>                                         <span class="st">"MICRONESIA"</span> <span class="ot">=</span> <span class="st">"FSM"</span>,</span>
+<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a>                                         <span class="st">"HAWAII (USA)"</span> <span class="ot">=</span> <span class="cn">NA</span>,</span>
+<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a>                                         <span class="st">"LOUISIANA (USA)"</span> <span class="ot">=</span> <span class="cn">NA</span>,</span>
+<span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a>                                         <span class="st">"NORTHERN IRELAND (UK)"</span> <span class="ot">=</span> <span class="cn">NA</span>))) <span class="sc">%&gt;%</span></span>
+<span id="cb13-17"><a href="#cb13-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">relocate</span>(iso3c, <span class="at">.after =</span> political_entities)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: There was 1 warning in `mutate()`.
+ℹ In argument: `iso3c = countrycode(...)`.
+Caused by warning:
+! Some values were not matched unambiguously: AZORES (PG), BRITISH TERRITORIES OF ANTARTICA (UK), CANARY ISLANDS (SP), MADEIRA (PG), NETHERLANDS ANTILLES (NL), QUEBEC (CD), SCOTLAND (UK)
+To fix unmatched values, please use the `custom_match` argument. If you think the default matching rules should be improved, please file an issue at https://github.com/vincentarelbundock/countrycode/issues</code></pre>
+</div>
 </div>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">dim</span>(colonize_data)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="co"># From countrycode: detects country code type</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="fu">guess_field</span>(colonize_data<span class="sc">$</span>state) <span class="co"># cown: 99% match</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>[1] 217  15</code></pre>
+<pre><code>     code percent_of_unique_matched
+cown cown                  99.07834
+gwn   gwn                  87.09677
+p4n   p4n                  81.56682
+p5n   p5n                  81.56682</code></pre>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(colonize_data)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-stdout">
-<pre><code>     state            name       col_ruler        ind_from        ind_date     
- Min.   :  2   Length   :217   Min.   : -9.0   Min.   : -9.0   Min.   : 30100  
- 1st Qu.:271   N.unique :217   1st Qu.:200.0   1st Qu.:200.0   1st Qu.:183111  
- Median :435   N.blank  :  0   Median :200.0   Median :200.0   Median :195311  
- Mean   :460   Min.nchar:  4   Mean   :228.9   Mean   :235.7   Mean   :185966  
- 3rd Qu.:670   Max.nchar: 40   3rd Qu.:230.0   3rd Qu.:255.0   3rd Qu.:197010  
- Max.   :990                   Max.   :920.0   Max.   :920.0   Max.   :201107  
-    ind_viol        ind_type        sec_from         sec_date     
- Min.   :0.000   Min.   :1.000   Min.   : -9.00   Min.   :    -9  
- 1st Qu.:0.000   1st Qu.:2.000   1st Qu.: -9.00   1st Qu.:    -9  
- Median :0.000   Median :2.000   Median : -9.00   Median :    -9  
- Mean   :0.424   Mean   :2.147   Mean   : 47.43   Mean   : 33734  
- 3rd Qu.:1.000   3rd Qu.:2.000   3rd Qu.: -9.00   3rd Qu.:    -9  
- Max.   :1.000   Max.   :4.000   Max.   :820.00   Max.   :201107  
-    sec_viol           into         into_date         co_wsys      
- Min.   :-9.000   Min.   : -9.0   Min.   :    -9   Min.   :181601  
- 1st Qu.:-9.000   1st Qu.: -9.0   1st Qu.:    -9   1st Qu.:189801  
- Median :-9.000   Median : -9.0   Median :    -9   Median :195810  
- Mean   :-7.318   Mean   : 23.4   Mean   : 16649   Mean   :193040  
- 3rd Qu.:-9.000   3rd Qu.: -9.0   3rd Qu.:    -9   3rd Qu.:197409  
- Max.   : 1.000   Max.   :816.0   Max.   :199010   Max.   :201107  
-     g_wsys             notes    
- Min.   :    -9   Length   :217  
- 1st Qu.:181601   N.unique :139  
- Median :194411   N.blank  :  0  
- Mean   :172159   Min.nchar:  2  
- 3rd Qu.:196407   Max.nchar:239  
- Max.   :201107                  </code></pre>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="co">#d# no iso codes for exctinct nations,</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a><span class="co">#d# may need to hard code succecor state iso codes.</span></span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Austro-hungarian Empire is the sole colonizer w/out an iso3c code</span></span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a><span class="co"># 3 tansit projects are in czechia, colonized by the austro-hungarian empire</span></span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Using Austria iso3c code: shares a boarder with Czechia (Hungary does not)</span></span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Add variable that contains the country's iso3c code</span></span>
+<span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Add variable that contains the colonizor's iso3c code</span></span>
+<span id="cb17-11"><a href="#cb17-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Add variable that contains the ind_from's iso3c code</span></span>
+<span id="cb17-12"><a href="#cb17-12" aria-hidden="true" tabindex="-1"></a>colonize_data_1 <span class="ot">&lt;-</span> colonize_data <span class="sc">%&gt;%</span></span>
+<span id="cb17-13"><a href="#cb17-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">iso3c =</span> <span class="fu">countrycode</span>(state, <span class="st">"cown"</span>, <span class="st">"iso3c"</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb17-14"><a href="#cb17-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">relocate</span>(iso3c, <span class="at">.after =</span> state) <span class="sc">%&gt;%</span></span>
+<span id="cb17-15"><a href="#cb17-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">col_ruler_iso3c =</span> <span class="fu">countrycode</span>(col_ruler, <span class="st">"cown"</span>, <span class="st">"iso3c"</span>,</span>
+<span id="cb17-16"><a href="#cb17-16" aria-hidden="true" tabindex="-1"></a>                                       <span class="at">custom_match =</span> <span class="fu">c</span>(<span class="st">"300"</span> <span class="ot">=</span> <span class="st">"AUT"</span>))) <span class="sc">%&gt;%</span></span>
+<span id="cb17-17"><a href="#cb17-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">relocate</span>(col_ruler_iso3c, <span class="at">.after =</span> col_ruler) <span class="sc">%&gt;%</span></span>
+<span id="cb17-18"><a href="#cb17-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">ind_from_iso3c =</span> <span class="fu">countrycode</span>(ind_from, <span class="st">"cown"</span>, <span class="st">"iso3c"</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb17-19"><a href="#cb17-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">relocate</span>(ind_from_iso3c, <span class="at">.after =</span> ind_from)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: There was 1 warning in `mutate()`.
+ℹ In argument: `iso3c = countrycode(state, "cown", "iso3c")`.
+Caused by warning:
+! Some values were not matched unambiguously: 240, 245, 260, 265, 267, 269, 271, 273, 275, 280, 300, 315, 329, 332, 335, 337, 345, 347, 511, 678, 680, 730, 817
+To fix unmatched values, please use the `custom_match` argument. If you think the default matching rules should be improved, please file an issue at https://github.com/vincentarelbundock/countrycode/issues</code></pre>
 </div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: There was 1 warning in `mutate()`.
+ℹ In argument: `col_ruler_iso3c = countrycode(col_ruler, "cown", "iso3c",
+  custom_match = c(`300` = "AUT"))`.
+Caused by warning:
+! Some values were not matched unambiguously: -9
+To fix unmatched values, please use the `custom_match` argument. If you think the default matching rules should be improved, please file an issue at https://github.com/vincentarelbundock/countrycode/issues</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: There was 1 warning in `mutate()`.
+ℹ In argument: `ind_from_iso3c = countrycode(ind_from, "cown", "iso3c")`.
+Caused by warning:
+! Some values were not matched unambiguously: -9, 89, 300, 315, 345, 678, 730
+To fix unmatched values, please use the `custom_match` argument. If you think the default matching rules should be improved, please file an issue at https://github.com/vincentarelbundock/countrycode/issues</code></pre>
+</div>
+</div>
+<div class="cell" data-label="wb-data-clean">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="co">#TD# make year a variable (lengthen), make series names variables (widen)</span></span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a><span class="co">#TD# iso3c</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">dim</span>(wage_data)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-stdout">
-<pre><code>[1] 11358    11</code></pre>
-</div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(wage_data)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-stdout">
-<pre><code>   ref_area_label     source_label    indicator_label      sex_label    
- Length   :11358   Length   :11358   Length   :11358   Length   :11358  
- N.unique :   98   N.unique :   60   N.unique :    1   N.unique :    4  
- N.blank  :    0   N.blank  :    0   N.blank  :    0   N.blank  :    0  
- Min.nchar:    4   Min.nchar:   23   Min.nchar:   69   Min.nchar:    4  
- Max.nchar:   52   Max.nchar:   92   Max.nchar:   69   Max.nchar:    6  
-                                                                        
-   classif1_label    classif2_label       time        obs_value        
- Length   :11358   Length   :11358   Min.   :2003   Min.   :     14.4  
- N.unique :    2   N.unique :    3   1st Qu.:2014   1st Qu.:    453.7  
- N.blank  :    0   N.blank  :    0   Median :2018   Median :    948.1  
- Min.nchar:   17   Min.nchar:   20   Mean   :2018   Mean   :  84564.8  
- Max.nchar:   24   Max.nchar:   24   3rd Qu.:2022   3rd Qu.:   3241.9  
-                                     Max.   :2025   Max.   :9000346.4  
-  obs_status_label note_indicator_label note_source_label
- Length   :11358   Length   :11358      Length   :11358  
- N.unique :    3   N.unique :  147      N.unique :   13  
- N.blank  : 9674   N.blank  :    0      N.blank  :    0  
- Min.nchar:    0   Min.nchar:   26      Min.nchar:   50  
- Max.nchar:   15   Max.nchar:  384      Max.nchar:  257  
-                                                         </code></pre>
-</div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>wage_data <span class="sc">%&gt;%</span></span>
-<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">distinct</span>(classif1_label)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-stdout">
-<pre><code>            classif1_label
-1        ILO sector: Total
-2 ILO sector: Construction</code></pre>
-</div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>wage_data <span class="sc">%&gt;%</span></span>
-<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">distinct</span>(classif2_label)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-stdout">
-<pre><code>            classif2_label
-1 Currency: Local currency
-2     Currency: 2021 PPP $
-3   Currency: U.S. dollars</code></pre>
-</div>
-</div>
-<div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>wage_data_1 <span class="ot">&lt;-</span> wage_data <span class="sc">%&gt;%</span></span>
-<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(sex_label <span class="sc">==</span> <span class="st">"Total"</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(classif1_label <span class="sc">==</span> <span class="st">"ILO sector: Construction"</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(classif2_label <span class="sc">==</span> <span class="st">"Currency: 2021 PPP $"</span>)</span>
-<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a>wage_data_1 <span class="sc">%&gt;%</span></span>
-<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">distinct</span>(ref_area_label, time) <span class="sc">%&gt;%</span></span>
-<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">count</span>() <span class="co"># Equal to obs count in wage_data_1: there is now only 1 obs per</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a>wage_data_1 <span class="ot">&lt;-</span> wage_data <span class="sc">%&gt;%</span></span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(sex_label <span class="sc">==</span> <span class="st">"Total"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(classif1_label <span class="sc">==</span> <span class="st">"ILO sector: Construction"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(classif2_label <span class="sc">==</span> <span class="st">"Currency: 2021 PPP $"</span>)</span>
+<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-6"><a href="#cb22-6" aria-hidden="true" tabindex="-1"></a><span class="co"># check # of unique nation-year combonations</span></span>
+<span id="cb22-7"><a href="#cb22-7" aria-hidden="true" tabindex="-1"></a>wage_data_1 <span class="sc">%&gt;%</span></span>
+<span id="cb22-8"><a href="#cb22-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">distinct</span>(ref_area_label, time) <span class="sc">%&gt;%</span></span>
+<span id="cb22-9"><a href="#cb22-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">count</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>    n
 1 629</code></pre>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>          <span class="co"># nation-year combonation</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Equal to obs count in wage_data_1: there is now only 1 obs per</span></span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a>    <span class="co"># nation-year combanation</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
+<div class="cell" data-label="data-join">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="co">#TD# join to transit_data_1</span></span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a><span class="co">#TD# legal origins</span></span>
+<span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-5"><a href="#cb25-5" aria-hidden="true" tabindex="-1"></a><span class="co">#TD# colonize</span></span>
+<span id="cb25-6"><a href="#cb25-6" aria-hidden="true" tabindex="-1"></a>    <span class="co"># If not colonized (col_ruler_iso3c is NA), colonial origin = own iso3c</span></span>
+<span id="cb25-7"><a href="#cb25-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-8"><a href="#cb25-8" aria-hidden="true" tabindex="-1"></a><span class="co">#TD# wb data</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</section>
+<section id="data-exploration-2-cleaned" class="level1">
+<h1>Data Exploration 2 (Cleaned)</h1>
+</section>
 
 </main>
 <!-- /main column -->
