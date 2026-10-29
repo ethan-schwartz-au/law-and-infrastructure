@@ -140,6 +140,21 @@ colonize_data_1 <- colonize_data %>%
 ```{r}
 #| Label: wb-data-clean
 
+# Rename year headers to just 4 digit year
+wb_data_1 <- wb_data %>%
+  rename_with(\(x) substr(x, 2, 5), .cols = starts_with("x"))
+
+
+# Lengthen df by year
+wb_data_1 <- wb_data_1 %>%
+  pivot_longer(cols = '1960':'2025',
+               names_to = "year",
+               values_to = "value")
+
+wb_data_1 <- wb_data_1 %>%
+  mutate(series_name = trimws(gsub("-.*", "", series_name)))
+
+#TD# iso3c
 
 
 ```
@@ -157,6 +172,8 @@ wage_data_1 %>%
   count()
     # Equal to obs count in wage_data_1: there is now only 1 obs per
     # nation-year combanation
+
+
 ```
 
 ```{r}
@@ -177,5 +194,9 @@ wage_data_1 %>%
 ```{r}
 #| label: cleaned-explore-years
 
+ggplot(transit_data_1, aes(x = year)) +
+  geom_histogram()
 
+ggplot(wage_data_1, aes(x = year)) +
+  geom_histogram()
 ```
