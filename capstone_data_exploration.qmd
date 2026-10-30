@@ -60,22 +60,6 @@ wage_data <- wage_data %>%
   mutate(across(where(is.character), \(x) na_if(x, "")))
 ```
 
-# Data Exploration 1 (Raw)
-
-```{r}
-#| label: transit-data-exploration
-#| eval: False
-```
-
-```{r}
-#| label: colonize-data-exploration
-#| eval: False
-
-# dim(colonize_data)
-# 
-# summary(colonize_data)
-```
-
 # Data Cleaning
 
 ### Merger preparation
@@ -95,6 +79,7 @@ transit_data_1 <- transit_data %>%
 
 ```{r}
 #| label: legal-data-clean
+#| warning: false
 
 # default min = 80%
 # guess_field(toupper(legal_origins_data$political_entities), min_similarity = 0)
@@ -120,9 +105,10 @@ legal_origins_data_1 <- legal_origins_data %>%
 
 ```{r}
 #| label: colonize-data-clean
+#| warning: false
 
 # From countrycode: detects country code type
-guess_field(colonize_data$state) # cown: 99% match
+# guess_field(colonize_data$state) # cown: 99% match
 
 
 # Austro-hungarian Empire is the sole colonizer w/out an iso3c code
@@ -207,42 +193,79 @@ wage_data_1 <- wage_data %>%
 
 ```
 
-### Merger
+### Joining
 
 ```{r}
-#| label: data-join
+#| label: join
 
 
 # SELECT relevent variables from transit_data_1
-merged <- transit_data_1 %>%
-  select(id, iso3c, city, line, phase, rr, length, tunnel_per, elevated, atgrade,
+joined <- transit_data_1 %>%
+  select(id, iso3c, city, line, phase, rr, length, tunnel, elevated, atgrade,
          stations, platform_length_meters, year, cost_km_2025_dollars)
 
 # ADD relevent variables from legal_origins_data_1
-merged <- merged %>%
+joined <- joined %>%
   left_join(legal_origins_data_1 %>% select( iso3c, legal_systems, mixed_systems_components),
             by = "iso3c")
 
 # ADD relevent variables from colonize_data_1
-merged <- merged %>%
+joined <- joined %>%
   left_join(colonize_data_1 %>% select(iso3c, col_ruler_iso3c),
             by = "iso3c")
 
 # ADD relevent variables from wb_data_1
 
-merged <- merged %>%
+joined <- joined %>%
   left_join(wb_data_1 %>% select(-c(country_name, country_code)),
             by = c("iso3c", "year"))
 ```
 
-### Merged Cleaning
+### Joined Cleaning
 
 ```{r}
-#| label: merged-clean
+#| label: joined-clean
 
+# Make all non-entries into NA using an anonymous function [\(x)]
+joined_1 <- joined %>%
+  mutate(across(everything(), \(col) if_else(col %in% c(
+    "See Notes.", "See notes.", "#N/A", "N/A", "n/a", ".."), NA, col)))
 
+# Clean length:stations and convert to numeric
+joined_1 <- joined_1 %>%
+  # Remove footnote asterisks
+  mutate(across(length:stations, \(col) gsub("\\*", "", col))) %>%
+  # Make "x/y" entries NA, get rid of abiguous '36/22' station count
+  mutate(across(length:stations, \(col) if_else(grepl("/", col), NA, col))) %>%
+  # Convert to numeric
+  mutate(across(length:stations, as.numeric))
 
+# Clean platform_length_meters and convert to numeric
+joined_1 <- joined_1 %>%
+  # Claude code: if m is present, replace value with all digits and '.'s proceeding
+  #              m until a non digit/. is found. (ex: '4 cars/120m' -> '120')
+  mutate(platform_length_meters = if_else(
+    grepl("m", platform_length_meters),
+    sub("^(.*[^0-9.])?([0-9.]+)m.*$", "\\2", platform_length_meters),
+    platform_length_meters)) %>%
+  # Make any values containing 'c' (cars), '/' or '-' into NA
+  mutate(platform_length_meters = if_else(
+    grepl("[c/-]", platform_length_meters), NA, platform_length_meters)) %>%
+  # Convert to numeric
+  mutate(platform_length_meters = as.numeric(platform_length_meters))
+
+# Clean cost_km_2025_dollars and convert to numeric
+joined_1 <- joined_1 %>%
+  mutate(cost_km_2025_dollars = gsub(",", "", cost_km_2025_dollars)) %>%
+  mutate(cost_km_2025_dollars = as.numeric(cost_km_2025_dollars))
+
+# Clean government_effectiveness:trade_percent_of_gdp and convert to numeric
+joined_1 <- joined_1 %>%
+  # Convert to numeric
+  mutate(across(government_effectiveness:trade_percent_of_gdp, as.numeric))
 ```
+
+### Transform Variables
 
 ```{r}
 #| label: transformed-variables
@@ -253,7 +276,7 @@ merged <- merged %>%
 
 ```
 
-# Data Exploration 2 (Cleaned)
+# Data Exploration
 
 ```{r}
 #| label: cleaned-explore-years
