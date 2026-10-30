@@ -26,32 +26,38 @@ library(countrycode) # to unify country codes to one format
 ##         Transit Costs Project. https://transitcosts.com/data/
 transit_data <- read.csv("data/transit_costs_project_data.csv")
 transit_data <- transit_data %>%
-  clean_names() # standardizes column name format (lowercase, _ as seperator)
+  clean_names() %>% # standardizes column name format (lowercase, _ as seperator)
+  mutate(across(where(is.character), \(x) na_if(x, ""))) # "" values -> NA
 
 ## Source: University of Ottawa. (2008). Alphabetical Index of the Political
 ##         Entities and Corresponding Legal Systems . Juriglobe.
 ##         https://www.juriglobe.ca/eng/sys-juri/index-alpha.php
 legal_origins_data <- read.csv("data/legal_origins_data.csv")
 legal_origins_data <- legal_origins_data %>%
-  clean_names()
+  clean_names() %>%
+  mutate(across(where(is.character), \(x) na_if(x, "")))
+
 
 ## Source: Hensel, P. R. (2018, November 13). ICOW Colonial History Data.
 ##         https://paulhensel.org/icowcol.html
 colonize_data <- read.csv("data/col_data.csv")
 colonize_data <- colonize_data %>%
-  clean_names()
+  clean_names() %>%
+  mutate(across(where(is.character), \(x) na_if(x, "")))
 
 ## Source: World Bank Group. (2026, October 8). World development indicators.
 ##         DataBank.
 ##         https://databank.worldbank.org/source/world-development-indicators
 wb_data <- read.csv("data/wb_gdppp_gov_data.csv")
 wb_data <- wb_data %>%
-  clean_names()
+  clean_names() %>%
+  mutate(across(where(is.character), \(x) na_if(x, "")))
 
 #D# might use
 wage_data <- read.csv("data/const_wage_data.csv")
 wage_data <- wage_data %>%
-  clean_names()
+  clean_names() %>%
+  mutate(across(where(is.character), \(x) na_if(x, "")))
 ```
 
 # Data Exploration 1 (Raw)
@@ -72,11 +78,13 @@ wage_data <- wage_data %>%
 
 # Data Cleaning
 
+### Merger preparation
+
 ```{r}
 #| label: transit-data-clean
 
 # From countrycode: detects country code type
-guess_field(transit_data$country) # iso2c: 97% match
+### guess_field(transit_data$country) # iso2c: 97% match
 
 # Add variable that contains the country's iso3c code
 transit_data_1 <- transit_data %>%
@@ -86,10 +94,10 @@ transit_data_1 <- transit_data %>%
 ```
 
 ```{r}
-#| Label: legal-data-clean
+#| label: legal-data-clean
 
 # default min = 80%
-guess_field(toupper(legal_origins_data$political_entities), min_similarity = 0)
+# guess_field(toupper(legal_origins_data$political_entities), min_similarity = 0)
 # no match, use "country.name"
 
 # Claude (Opus 5.5) code
@@ -116,9 +124,6 @@ legal_origins_data_1 <- legal_origins_data %>%
 # From countrycode: detects country code type
 guess_field(colonize_data$state) # cown: 99% match
 
-#d# no iso codes for exctinct nations,
-#d# may need to hard code succecor state iso codes.
-
 
 # Austro-hungarian Empire is the sole colonizer w/out an iso3c code
 # 3 tansit projects are in czechia, colonized by the austro-hungarian empire
@@ -138,12 +143,16 @@ colonize_data_1 <- colonize_data %>%
 ```
 
 ```{r}
-#| Label: wb-data-clean
+#| label: wb-data-clean
+
 
 # Rename year headers to just 4 digit year
 wb_data_1 <- wb_data %>%
   rename_with(\(x) substr(x, 2, 5), .cols = starts_with("x"))
 
+wb_data_1 <- wb_data_1 %>%
+  filter(!is.na(country_code)) %>%
+  filter(!is.na(series_name))
 
 # Lengthen df by year
 wb_data_1 <- wb_data_1 %>%
@@ -151,12 +160,34 @@ wb_data_1 <- wb_data_1 %>%
                names_to = "year",
                values_to = "value")
 
+# Remove all character in series_name values from '-' on
 wb_data_1 <- wb_data_1 %>%
   mutate(series_name = trimws(gsub("-.*", "", series_name)))
+  
+# Remove series_code column (to widen more easily)
+wb_data_1 <- wb_data_1 %>%
+  select(-'series_code')
 
-#TD# iso3c
+# Widen df by series
+wb_data_1 <- wb_data_1 %>%
+  pivot_wider(names_from = 'series_name', values_from = 'value')
 
+# apply clean names to new headers from pivot_wider (series_code values)
+wb_data_1 <- wb_data_1 %>%
+  clean_names()
 
+# guess_field(wb_data_1$country_code)
+# wb code nearly but not fully identical to iso3c
+
+# Add variable that contains the country's iso3c code
+wb_data_1 <- wb_data_1 %>%
+  mutate(iso3c = countrycode(country_code, "wb", "iso3c",
+                             custom_match = c(XKX = "XKX", CHI = NA))) %>%
+  relocate(iso3c, .after = country_code)
+
+# Change 'year' class, chr -> int (to match transit data in left_join)
+wb_data_1 <- wb_data_1 %>%
+  mutate(year = as.integer(year))
 ```
 
 ```{r}
@@ -167,26 +198,59 @@ wage_data_1 <- wage_data %>%
   filter(classif2_label == "Currency: 2021 PPP $")
 
 # check # of unique nation-year combonations
-wage_data_1 %>%
-  distinct(ref_area_label, time) %>%
-  count()
+# wage_data_1 %>%
+#   distinct(ref_area_label, time) %>%
+#   count()
     # Equal to obs count in wage_data_1: there is now only 1 obs per
     # nation-year combanation
 
 
 ```
 
+### Merger
+
 ```{r}
-#| Label: data-join
+#| label: data-join
 
-#TD# join to transit_data_1
 
-#TD# legal origins
+# SELECT relevent variables from transit_data_1
+merged <- transit_data_1 %>%
+  select(id, iso3c, city, line, phase, rr, length, tunnel_per, elevated, atgrade,
+         stations, platform_length_meters, year, cost_km_2025_dollars)
 
-#TD# colonize
-    # If not colonized (col_ruler_iso3c is NA), colonial origin = own iso3c
+# ADD relevent variables from legal_origins_data_1
+merged <- merged %>%
+  left_join(legal_origins_data_1 %>% select( iso3c, legal_systems, mixed_systems_components),
+            by = "iso3c")
 
-#TD# wb data
+# ADD relevent variables from colonize_data_1
+merged <- merged %>%
+  left_join(colonize_data_1 %>% select(iso3c, col_ruler_iso3c),
+            by = "iso3c")
+
+# ADD relevent variables from wb_data_1
+
+merged <- merged %>%
+  left_join(wb_data_1 %>% select(-c(country_name, country_code)),
+            by = c("iso3c", "year"))
+```
+
+### Merged Cleaning
+
+```{r}
+#| label: merged-clean
+
+
+
+```
+
+```{r}
+#| label: transformed-variables
+
+
+
+# If not colonized (col_ruler_iso3c is NA), colonial origin = own iso3c
+
 ```
 
 # Data Exploration 2 (Cleaned)
@@ -197,6 +261,6 @@ wage_data_1 %>%
 ggplot(transit_data_1, aes(x = year)) +
   geom_histogram()
 
-ggplot(wage_data_1, aes(x = year)) +
-  geom_histogram()
+# ggplot(wage_data_1, aes(x = year)) +
+#   geom_histogram()
 ```
