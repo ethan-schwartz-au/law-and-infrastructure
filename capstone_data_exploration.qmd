@@ -178,10 +178,17 @@ wb_data_1 <- wb_data_1 %>%
 
 ```{r}
 #| label: wage-data-clean
+
 wage_data_1 <- wage_data %>%
   filter(sex_label == "Total") %>%
   filter(classif1_label == "ILO sector: Construction") %>%
   filter(classif2_label == "Currency: 2021 PPP $")
+
+unique(wage_data$ref_area_label) %>%
+  length()
+
+unique(wage_data$ref_area_label) %>%
+  length()
 
 # check # of unique nation-year combonations
 # wage_data_1 %>%
@@ -263,12 +270,50 @@ joined_1 <- joined_1 %>%
 joined_1 <- joined_1 %>%
   # Convert to numeric
   mutate(across(government_effectiveness:trade_percent_of_gdp, as.numeric))
+
+# Correct legal systems for cit(y/ies) that differ from their greater nation
+joined_1 <- joined_1 %>%
+  mutate(legal_systems = if_else(
+    city %in% "Montreal", "Mixed", legal_systems)) %>%
+  mutate(mixed_systems_components = if_else(
+    city %in% "Montreal", "Civil/Common", mixed_systems_components))
+
+# Unify legal system values format
+joined_1 <- joined_1 %>%
+  mutate(mixed_systems_components = gsub(" ", "", mixed_systems_components)) %>%
+  mutate(mixed_systems_components = gsub("law", "", mixed_systems_components)) %>%
+  mutate(legal_systems = gsub(" ", "", legal_systems)) %>%
+  mutate(legal_systems = gsub("law", "", legal_systems)) %>%
+  mutate(mixed_systems_components = if_else(
+    is.na(mixed_systems_components), NA,
+    sapply(strsplit(mixed_systems_components, "/"), \(parts) paste(sort(parts), collapse = "/"))))
 ```
 
 ### Transform Variables
 
 ```{r}
 #| label: transformed-variables
+
+# Make variables
+joined_2 <- joined_1 %>%
+  # Make variables for length of rail type/length of rail
+  mutate(tunnel_per = tunnel/length) %>%
+  mutate(elevated_per = elevated/length) %>%
+  mutate(atgrade_per = atgrade/length) %>%
+  # Make variables for stations/km and platform m/km
+  mutate(stations_per_km = stations/length) %>%
+  mutate(platfrom_m_per_km = stations_per_km*platform_length_meters) %>%
+  # Make col_ruler_2 where uncolonized countries are marked as their own col origin
+  mutate(col_ruler_2 = if_else(is.na(col_ruler_iso3c), iso3c, col_ruler_iso3c)) %>%
+  # Make legal_systems_2, where 'Mixed' _> value of mixed_systems_components
+  mutate(legal_systems_2 = if_else(
+    legal_systems == "Mixed", mixed_systems_components, legal_systems))
+
+
+# Remove irrelevent variables
+joined_2_trim <- joined_2 %>%
+  select(-c(tunnel, elevated, atgrade, stations, platform_length_meters,
+            legal_systems, mixed_systems_components, col_ruler_iso3c))  
 
 
 
@@ -279,11 +324,86 @@ joined_1 <- joined_1 %>%
 # Data Exploration
 
 ```{r}
+#| label: correlation-explore
+
+cor_matrix <- joined_2_trim %>%
+  select(-id) %>%
+  select(where(is.numeric)) %>%
+  cor(use = "pairwise.complete.obs")
+
+cor_matrix %>%
+  as.table() %>%
+  as.data.frame() %>%
+  filter(as.character(Var1) < as.character(Var2)) %>%
+  rename(cor = Freq) %>%
+  arrange(desc(abs(cor)))
+```
+
+```{r}
 #| label: cleaned-explore-years
+
+
 
 ggplot(transit_data_1, aes(x = year)) +
   geom_histogram()
 
 # ggplot(wage_data_1, aes(x = year)) +
 #   geom_histogram()
+```
+
+```{r}
+#| label: na-explore
+
+# NAs per variable
+joined_2_trim %>%
+  is.na() %>%
+  colSums() %>%
+  enframe(name = "variable", value = "n_na") %>%
+  ggplot(aes(x = n_na, y = reorder(variable, n_na))) +
+  geom_col() +
+  labs(x = "Number of NAs", y = NULL)
+
+joined_2_trim %>%
+  nrow()
+
+joined_2_trim %>%
+  filter(if_any(-c(platfrom_m_per_km, atgrade_per, elevated_per, id), is.na)) %>%
+  nrow()
+
+joined_2_trim %>%
+  filter(if_all(
+    -c(platfrom_m_per_km, atgrade_per, elevated_per, id), \(col) !is.na(col))) %>%
+  
+  
+```
+
+```{r}
+
+
+# Distribution barchart of legal_systems_2
+joined_2 %>%
+  ggplot(aes(y = fct_infreq(legal_systems_2))) +
+  geom_bar() +
+  labs(x = "Count", y = NULL)
+
+# Distribution of countries, grouped by legal_systems_2
+joined_2 %>%
+  ggplot(aes(y = legal_systems_2, fill = iso3c)) +
+  geom_bar(position = "fill") +
+  labs(x = "Proportion", y = NULL, fill = NULL) +
+  guides(fill = guide_legend(ncol = 4))
+
+joined_2 %>%
+  ggplot(aes(y = iso3c)) +
+  geom_bar() +
+  facet_wrap(~ legal_systems_2, scales = "free_y", ncol = 4) +
+  labs(x = "Count", y = NULL) +
+  theme(text = element_text(size = 7))
+
+joined_2 %>%
+  ggplot(aes(x = "", fill = iso3c)) +
+  geom_bar(width = 1) +
+  coord_polar(theta = "y") +
+  labs(fill = NULL) +
+  theme_void()
 ```
