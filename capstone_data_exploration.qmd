@@ -8,15 +8,17 @@ format: html
 
 ```{r}
 #| label: load-packages
+#| warning: false
 
 # vector of needed packages
-pkgs <- c("tidyverse", "janitor", "countrycode") 
+pkgs <- c("tidyverse", "janitor", "countrycode", "readxl") 
 # install packages that are on needed list but not on list of installed
 install.packages(setdiff(pkgs, rownames(installed.packages())))
 
 library(tidyverse)
 library(janitor) # to clean column names via clean_names()
 library(countrycode) # to unify country codes to one format
+library(readxl) # to import one sheet of multi-sheet excel file
 ```
 
 ```{r}
@@ -24,40 +26,49 @@ library(countrycode) # to unify country codes to one format
 
 ## Source: NYU Marron Institute of Urban Management. (2025b, January 27). "Data".
 ##         Transit Costs Project. https://transitcosts.com/data/
-transit_data <- read.csv("data/transit_costs_project_data.csv")
-transit_data <- transit_data %>%
+transit_data <- read.csv("data/transit_costs_project_data.csv") %>%
   clean_names() %>% # standardizes column name format (lowercase, _ as seperator)
   mutate(across(where(is.character), \(x) na_if(x, ""))) # "" values -> NA
 
 ## Source: University of Ottawa. (2008). Alphabetical Index of the Political
 ##         Entities and Corresponding Legal Systems . Juriglobe.
 ##         https://www.juriglobe.ca/eng/sys-juri/index-alpha.php
-legal_origins_data <- read.csv("data/legal_origins_data.csv")
-legal_origins_data <- legal_origins_data %>%
+legal_origins_data <- read.csv("data/legal_origins_data.csv") %>%
   clean_names() %>%
   mutate(across(where(is.character), \(x) na_if(x, "")))
 
 
 ## Source: Hensel, P. R. (2018, November 13). ICOW Colonial History Data.
 ##         https://paulhensel.org/icowcol.html
-colonize_data <- read.csv("data/col_data.csv")
-colonize_data <- colonize_data %>%
+colonize_data <- read.csv("data/col_data.csv") %>%
   clean_names() %>%
   mutate(across(where(is.character), \(x) na_if(x, "")))
 
 ## Source: World Bank Group. (2026, October 8). World development indicators.
 ##         DataBank.
 ##         https://databank.worldbank.org/source/world-development-indicators
-wb_data <- read.csv("data/wb_gdppp_gov_data.csv")
-wb_data <- wb_data %>%
+wb_data <- read.csv("data/wb_gdppp_gov_data.csv") %>%
   clean_names() %>%
   mutate(across(where(is.character), \(x) na_if(x, "")))
 
-#D# might use
-wage_data <- read.csv("data/const_wage_data.csv")
-wage_data <- wage_data %>%
+## Source: International Labour Orginization. (n.d.). Labour statistics for ILO
+##         sectors. ILOSTAT. ilostat.ilo.org/databases/ilo-sectors/ 
+wage_data <- read.csv("data/const_wage_data.csv") %>%
   clean_names() %>%
   mutate(across(where(is.character), \(x) na_if(x, "")))
+
+## Source: World Bank Group. (2025, April 24). Global fuel prices database - world
+##         bank data catalog. Data Catalog.
+##         https://datacatalog.worldbank.org/search/dataset/0066829/global-fuel-prices-database 
+diesel_a2015_data <- read_excel("data/Global_Fuel_Prices_Database.xlsx",
+                          sheet = "Diesel USD") %>%
+  rename_with(\(nm) as.character(excel_numeric_to_date(as.numeric(nm))),
+              .cols = matches("^\\d+$")) %>%
+  clean_names() %>%
+  mutate(across(where(is.character), \(x) na_if(x, "")))
+
+## Source: World Bank Group. (n.d.). WDI Database Archives. DataBank.
+##         https://databank.worldbank.org/source/wdi-database-archives# 
 ```
 
 # Data Cleaning
@@ -65,7 +76,7 @@ wage_data <- wage_data %>%
 ### Merger preparation
 
 ```{r}
-#| label: transit-data-clean
+#| label: clean-transit-data
 
 # From countrycode: detects country code type
 ### guess_field(transit_data$country) # iso2c: 97% match
@@ -78,7 +89,7 @@ transit_data_1 <- transit_data %>%
 ```
 
 ```{r}
-#| label: legal-data-clean
+#| label: clean-legal-data
 #| warning: false
 
 # default min = 80%
@@ -104,7 +115,7 @@ legal_origins_data_1 <- legal_origins_data %>%
 ```
 
 ```{r}
-#| label: colonize-data-clean
+#| label: clean-colonize-data
 #| warning: false
 
 # From countrycode: detects country code type
@@ -129,7 +140,7 @@ colonize_data_1 <- colonize_data %>%
 ```
 
 ```{r}
-#| label: wb-data-clean
+#| label: clean-wb-data
 
 # Rename year headers to just 4 digit year
 wb_data_1 <- wb_data %>%
@@ -176,7 +187,7 @@ wb_data_1 <- wb_data_1 %>%
 ```
 
 ```{r}
-#| label: wage-data-clean
+#| label: clean-wage-data
 
 # filter to relevent observations
 wage_data_1 <- wage_data %>%
@@ -192,14 +203,14 @@ wage_data_1 <- wage_data %>%
     # nation-year combanation
 
 # Check # lost countries after filtering
-unique(wage_data$ref_area_label) %>%
-  length()
-
-unique(wage_data_1$ref_area_label) %>%
-  length()
+# unique(wage_data$ref_area_label) %>%
+#   length()
+# 
+# unique(wage_data_1$ref_area_label) %>%
+#   length()
 # -7
 
-guess_field(wage_data_1$ref_area_label)
+# guess_field(wage_data_1$ref_area_label)
 # 92.3% match for	un.name.en
 
 wage_data_1 <- wage_data_1 %>%
@@ -207,6 +218,47 @@ wage_data_1 <- wage_data_1 %>%
   relocate(iso3c, .after = ref_area_label) %>%
   rename(year = time) %>%
   rename(wage_per_month = obs_value)
+```
+
+```{r}
+#| label: clean-diesel-a2015
+
+# There are multiple observations per country, default_map_1_show seems to indicate
+# the main observation
+
+# filter to only default_map_1_show == 1
+diesel_a2015_data_1 <- diesel_a2015_data %>%
+  filter(default_map_1_to_show == 1)
+
+
+# create average value for years
+start <- 2016
+n_times <- 10
+for (yr in start:(start + n_times - 1)) {
+  diesel_a2015_data_1 <- diesel_a2015_data_1 %>%
+    mutate("{yr}" := rowMeans(pick(contains(as.character(yr))), na.rm = TRUE))
+}
+
+# delete monthly values
+diesel_a2015_data_1 <- diesel_a2015_data_1 %>%
+  select(-c("x2015_12_01":"x2025_04_01"))
+
+# Lengthen df by year
+diesel_a2015_data_1 <- diesel_a2015_data_1 %>%
+  pivot_longer(cols = '2016':'2025',
+               names_to = "year",
+               values_to = "diesel_usd_per_ltr")
+
+# guess_field(diesel_a2015_data_1$country_code)
+# # create iso3c variable
+# diesel_a2015_data_1 <- diesel_a2015_data_1 %>%
+#   mutate(iso3c = countrycode(country_code, "wb", "iso3c"))
+# Only Curacao is not iso3c already
+
+# correct curacao code and rename country_code to iso3c
+diesel_a2015_data_1 <- diesel_a2015_data_1 %>%
+  mutate(country_code = if_else(country_code == "ANT", "CUW", country_code)) %>%
+  rename(iso3c = country_code)
 ```
 
 ### Joining
@@ -326,15 +378,14 @@ joined_2 <- joined_1 %>%
 # Remove irrelevent variables
 joined_2_trim <- joined_2 %>%
   select(-c(tunnel, elevated, atgrade, stations, platform_length_meters,
-            legal_systems, mixed_systems_components, col_ruler_iso3c))  
-
-
-
-# If not colonized (col_ruler_iso3c is NA), colonial origin = own iso3c
-
+            legal_systems, mixed_systems_components, col_ruler_iso3c))
 ```
 
 # Data Exploration
+
+```{r}
+# Keep open for RUN ALL CHUNKS ABOVE button easy access
+```
 
 ```{r}
 #| label: explore-correlation
