@@ -131,7 +131,6 @@ colonize_data_1 <- colonize_data %>%
 ```{r}
 #| label: wb-data-clean
 
-
 # Rename year headers to just 4 digit year
 wb_data_1 <- wb_data %>%
   rename_with(\(x) substr(x, 2, 5), .cols = starts_with("x"))
@@ -179,16 +178,11 @@ wb_data_1 <- wb_data_1 %>%
 ```{r}
 #| label: wage-data-clean
 
+# filter to relevent observations
 wage_data_1 <- wage_data %>%
   filter(sex_label == "Total") %>%
   filter(classif1_label == "ILO sector: Construction") %>%
   filter(classif2_label == "Currency: 2021 PPP $")
-
-unique(wage_data$ref_area_label) %>%
-  length()
-
-unique(wage_data$ref_area_label) %>%
-  length()
 
 # check # of unique nation-year combonations
 # wage_data_1 %>%
@@ -197,7 +191,22 @@ unique(wage_data$ref_area_label) %>%
     # Equal to obs count in wage_data_1: there is now only 1 obs per
     # nation-year combanation
 
+# Check # lost countries after filtering
+unique(wage_data$ref_area_label) %>%
+  length()
 
+unique(wage_data_1$ref_area_label) %>%
+  length()
+# -7
+
+guess_field(wage_data_1$ref_area_label)
+# 92.3% match for	un.name.en
+
+wage_data_1 <- wage_data_1 %>%
+  mutate(iso3c = countrycode(ref_area_label, "country.name", "iso3c")) %>%
+  relocate(iso3c, .after = ref_area_label) %>%
+  rename(year = time) %>%
+  rename(wage_per_month = obs_value)
 ```
 
 ### Joining
@@ -222,9 +231,13 @@ joined <- joined %>%
             by = "iso3c")
 
 # ADD relevent variables from wb_data_1
-
 joined <- joined %>%
   left_join(wb_data_1 %>% select(-c(country_name, country_code)),
+            by = c("iso3c", "year"))
+
+# ADD relevent variables from wage_data_1
+joined <- joined %>%
+  left_join(wage_data_1 %>% select(iso3c, year, wage_per_month),
             by = c("iso3c", "year"))
 ```
 
@@ -324,13 +337,15 @@ joined_2_trim <- joined_2 %>%
 # Data Exploration
 
 ```{r}
-#| label: correlation-explore
+#| label: explore-correlation
 
+# create correlation matrix
 cor_matrix <- joined_2_trim %>%
   select(-id) %>%
   select(where(is.numeric)) %>%
   cor(use = "pairwise.complete.obs")
 
+# create a table from the matrix and sort by absolute value of correlation
 cor_matrix %>%
   as.table() %>%
   as.data.frame() %>%
@@ -340,9 +355,7 @@ cor_matrix %>%
 ```
 
 ```{r}
-#| label: cleaned-explore-years
-
-
+#| label: explore-years
 
 ggplot(transit_data_1, aes(x = year)) +
   geom_histogram()
@@ -352,7 +365,7 @@ ggplot(transit_data_1, aes(x = year)) +
 ```
 
 ```{r}
-#| label: na-explore
+#| label: explore-na
 
 # NAs per variable
 joined_2_trim %>%
@@ -373,12 +386,13 @@ joined_2_trim %>%
 joined_2_trim %>%
   filter(if_all(
     -c(platfrom_m_per_km, atgrade_per, elevated_per, id), \(col) !is.na(col))) %>%
+  nrow()
   
   
 ```
 
 ```{r}
-
+#| label: explore-legal-system
 
 # Distribution barchart of legal_systems_2
 joined_2 %>%
