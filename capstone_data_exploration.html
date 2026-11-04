@@ -109,15 +109,19 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 
 <p>To do:</p>
-<p>Make sure its same type of measurement as a2016 data (ex real/nominal, ppp, etc)</p>
-<p><strong>Join</strong></p>
-<p>get steel data</p>
-<p>clean</p>
-<p>join</p>
-<p>get concrete/cement data</p>
-<p>clean</p>
-<p>join</p>
-<p>do correlations with dummys(?)</p>
+<ul>
+<li><p>Make sure its same type of measurement as a2016 data (ex real/nominal, ppp, etc)</p></li>
+<li><p>get steel data</p></li>
+<li><p>clean</p></li>
+<li><p>join</p></li>
+<li><p>get concrete/cement data</p></li>
+<li><p>clean</p></li>
+<li><p>join</p></li>
+<li><p>data explore</p>
+<ul>
+<li><strong>remove outlier (usa), redo var relations explore</strong></li>
+</ul></li>
+</ul>
 <section id="setup" class="level1">
 <h1>Setup</h1>
 <div class="cell">
@@ -368,21 +372,22 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rename_with</span>(\(nm) <span class="fu">sub</span>(<span class="st">"^x(</span><span class="sc">\\</span><span class="st">d{4})_yr</span><span class="sc">\\</span><span class="st">d{4}$"</span>, <span class="st">"</span><span class="sc">\\</span><span class="st">1"</span>, nm),</span>
 <span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>              <span class="at">.cols =</span> <span class="fu">matches</span>(<span class="st">"^x</span><span class="sc">\\</span><span class="st">d{4}_yr</span><span class="sc">\\</span><span class="st">d{4}$"</span>))</span>
 <span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a><span class="co"># pivot_longer by year, fills in missing year values by averaging nearest 1 or 2 value(s) of the country [there is usually a 1 year gap between observations]. Value is made NA if there aren't any values within 2 years</span></span>
-<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>diesel_b2016_data_1 <span class="ot">&lt;-</span> diesel_b2016_data_1 <span class="sc">%&gt;%</span></span>
-<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_longer</span>(<span class="st">`</span><span class="at">1960</span><span class="st">`</span><span class="sc">:</span><span class="st">`</span><span class="at">2015</span><span class="st">`</span>, <span class="at">names_to =</span> <span class="st">"year"</span>, <span class="at">values_to =</span> <span class="st">"diesel_usd_per_liter_b"</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">diesel_usd_per_liter_b =</span> <span class="fu">as.numeric</span>(diesel_usd_per_liter_b),</span>
-<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>         <span class="at">year =</span> <span class="fu">as.numeric</span>(year)) <span class="sc">%&gt;%</span></span>
-<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">prev =</span> diesel_usd_per_liter_b, <span class="at">nxt =</span> diesel_usd_per_liter_b,</span>
-<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a>         <span class="at">prev_yr =</span> <span class="fu">if_else</span>(<span class="fu">is.na</span>(diesel_usd_per_liter_b), <span class="cn">NA</span>, year), <span class="at">nxt_yr =</span> prev_yr) <span class="sc">%&gt;%</span></span>
-<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(country_name) <span class="sc">%&gt;%</span></span>
-<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">fill</span>(prev, prev_yr, <span class="at">.direction =</span> <span class="st">"down"</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">fill</span>(nxt, nxt_yr, <span class="at">.direction =</span> <span class="st">"up"</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ungroup</span>() <span class="sc">%&gt;%</span></span>
-<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">prev =</span> <span class="fu">if_else</span>(year <span class="sc">-</span> prev_yr <span class="sc">&lt;=</span> <span class="dv">2</span>, prev, <span class="cn">NA</span>),</span>
-<span id="cb9-19"><a href="#cb9-19" aria-hidden="true" tabindex="-1"></a>         <span class="at">nxt =</span> <span class="fu">if_else</span>(nxt_yr <span class="sc">-</span> year <span class="sc">&lt;=</span> <span class="dv">2</span>, nxt, <span class="cn">NA</span>),</span>
-<span id="cb9-20"><a href="#cb9-20" aria-hidden="true" tabindex="-1"></a>         <span class="at">diesel_usd_per_liter_b =</span> <span class="fu">coalesce</span>(diesel_usd_per_liter_b, (prev <span class="sc">+</span> nxt) <span class="sc">/</span> <span class="dv">2</span>, prev, nxt)) <span class="sc">%&gt;%</span></span>
-<span id="cb9-21"><a href="#cb9-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(<span class="sc">-</span>prev, <span class="sc">-</span>nxt, <span class="sc">-</span>prev_yr, <span class="sc">-</span>nxt_yr)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a><span class="co">#CHOICE#</span></span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a><span class="co"># pivot_longer by year, fills in missing year values by averaging nearest 1 or 2 value(s) of the country [there is usually a 1 year gap between observations]. Value is made NA if there aren't any values within 2 years</span></span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>diesel_b2016_data_1 <span class="ot">&lt;-</span> diesel_b2016_data_1 <span class="sc">%&gt;%</span></span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_longer</span>(<span class="st">`</span><span class="at">1960</span><span class="st">`</span><span class="sc">:</span><span class="st">`</span><span class="at">2015</span><span class="st">`</span>, <span class="at">names_to =</span> <span class="st">"year"</span>, <span class="at">values_to =</span> <span class="st">"diesel_usd_per_liter_b"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">diesel_usd_per_liter_b =</span> <span class="fu">as.numeric</span>(diesel_usd_per_liter_b),</span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>         <span class="at">year =</span> <span class="fu">as.numeric</span>(year)) <span class="sc">%&gt;%</span></span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">prev =</span> diesel_usd_per_liter_b, <span class="at">nxt =</span> diesel_usd_per_liter_b,</span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a>         <span class="at">prev_yr =</span> <span class="fu">if_else</span>(<span class="fu">is.na</span>(diesel_usd_per_liter_b), <span class="cn">NA</span>, year), <span class="at">nxt_yr =</span> prev_yr) <span class="sc">%&gt;%</span></span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(country_name) <span class="sc">%&gt;%</span></span>
+<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">fill</span>(prev, prev_yr, <span class="at">.direction =</span> <span class="st">"down"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">fill</span>(nxt, nxt_yr, <span class="at">.direction =</span> <span class="st">"up"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ungroup</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb9-19"><a href="#cb9-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">prev =</span> <span class="fu">if_else</span>(year <span class="sc">-</span> prev_yr <span class="sc">&lt;=</span> <span class="dv">2</span>, prev, <span class="cn">NA</span>),</span>
+<span id="cb9-20"><a href="#cb9-20" aria-hidden="true" tabindex="-1"></a>         <span class="at">nxt =</span> <span class="fu">if_else</span>(nxt_yr <span class="sc">-</span> year <span class="sc">&lt;=</span> <span class="dv">2</span>, nxt, <span class="cn">NA</span>),</span>
+<span id="cb9-21"><a href="#cb9-21" aria-hidden="true" tabindex="-1"></a>         <span class="at">diesel_usd_per_liter_b =</span> <span class="fu">coalesce</span>(diesel_usd_per_liter_b, (prev <span class="sc">+</span> nxt) <span class="sc">/</span> <span class="dv">2</span>, prev, nxt)) <span class="sc">%&gt;%</span></span>
+<span id="cb9-22"><a href="#cb9-22" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(<span class="sc">-</span>prev, <span class="sc">-</span>nxt, <span class="sc">-</span>prev_yr, <span class="sc">-</span>nxt_yr)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>Warning: There was 1 warning in `mutate()`.
 ℹ In argument: `diesel_usd_per_liter_b = as.numeric(diesel_usd_per_liter_b)`.
@@ -442,17 +447,15 @@ Caused by warning:
 <span id="cb12-23"><a href="#cb12-23" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(wage_data_1 <span class="sc">%&gt;%</span> <span class="fu">select</span>(iso3c, year, wage_per_month),</span>
 <span id="cb12-24"><a href="#cb12-24" aria-hidden="true" tabindex="-1"></a>            <span class="at">by =</span> <span class="fu">c</span>(<span class="st">"iso3c"</span>, <span class="st">"year"</span>))</span>
 <span id="cb12-25"><a href="#cb12-25" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-26"><a href="#cb12-26" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-27"><a href="#cb12-27" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-28"><a href="#cb12-28" aria-hidden="true" tabindex="-1"></a><span class="co"># ADD relevent variables from diesel_a2016_data_1</span></span>
-<span id="cb12-29"><a href="#cb12-29" aria-hidden="true" tabindex="-1"></a>joined <span class="ot">&lt;-</span> joined <span class="sc">%&gt;%</span></span>
-<span id="cb12-30"><a href="#cb12-30" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(diesel_a2016_data_1 <span class="sc">%&gt;%</span> <span class="fu">select</span>(iso3c, year, diesel_usd_per_liter_a),</span>
-<span id="cb12-31"><a href="#cb12-31" aria-hidden="true" tabindex="-1"></a>            <span class="at">by =</span> <span class="fu">c</span>(<span class="st">"iso3c"</span>, <span class="st">"year"</span>))</span>
-<span id="cb12-32"><a href="#cb12-32" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-33"><a href="#cb12-33" aria-hidden="true" tabindex="-1"></a><span class="co"># ADD relevent variables from diesel_a2016_data_1</span></span>
-<span id="cb12-34"><a href="#cb12-34" aria-hidden="true" tabindex="-1"></a>joined <span class="ot">&lt;-</span> joined <span class="sc">%&gt;%</span></span>
-<span id="cb12-35"><a href="#cb12-35" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(diesel_b2016_data_1 <span class="sc">%&gt;%</span> <span class="fu">select</span>(iso3c, year, diesel_usd_per_liter_b),</span>
-<span id="cb12-36"><a href="#cb12-36" aria-hidden="true" tabindex="-1"></a>            <span class="at">by =</span> <span class="fu">c</span>(<span class="st">"iso3c"</span>, <span class="st">"year"</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb12-26"><a href="#cb12-26" aria-hidden="true" tabindex="-1"></a><span class="co"># ADD relevent variables from diesel_a2016_data_1</span></span>
+<span id="cb12-27"><a href="#cb12-27" aria-hidden="true" tabindex="-1"></a>joined <span class="ot">&lt;-</span> joined <span class="sc">%&gt;%</span></span>
+<span id="cb12-28"><a href="#cb12-28" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(diesel_a2016_data_1 <span class="sc">%&gt;%</span> <span class="fu">select</span>(iso3c, year, diesel_usd_per_liter_a),</span>
+<span id="cb12-29"><a href="#cb12-29" aria-hidden="true" tabindex="-1"></a>            <span class="at">by =</span> <span class="fu">c</span>(<span class="st">"iso3c"</span>, <span class="st">"year"</span>))</span>
+<span id="cb12-30"><a href="#cb12-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-31"><a href="#cb12-31" aria-hidden="true" tabindex="-1"></a><span class="co"># ADD relevent variables from diesel_a2016_data_1</span></span>
+<span id="cb12-32"><a href="#cb12-32" aria-hidden="true" tabindex="-1"></a>joined <span class="ot">&lt;-</span> joined <span class="sc">%&gt;%</span></span>
+<span id="cb12-33"><a href="#cb12-33" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(diesel_b2016_data_1 <span class="sc">%&gt;%</span> <span class="fu">select</span>(iso3c, year, diesel_usd_per_liter_b),</span>
+<span id="cb12-34"><a href="#cb12-34" aria-hidden="true" tabindex="-1"></a>            <span class="at">by =</span> <span class="fu">c</span>(<span class="st">"iso3c"</span>, <span class="st">"year"</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </section>
 <section id="joined-clean" class="level3">
@@ -496,26 +499,33 @@ Caused by warning:
 <span id="cb13-36"><a href="#cb13-36" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Convert to numeric</span></span>
 <span id="cb13-37"><a href="#cb13-37" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="fu">across</span>(government_effectiveness<span class="sc">:</span>trade_percent_of_gdp, as.numeric))</span>
 <span id="cb13-38"><a href="#cb13-38" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb13-39"><a href="#cb13-39" aria-hidden="true" tabindex="-1"></a><span class="co"># Correct legal systems for cit(y/ies) that differ from their greater nation</span></span>
-<span id="cb13-40"><a href="#cb13-40" aria-hidden="true" tabindex="-1"></a>joined_1 <span class="ot">&lt;-</span> joined_1 <span class="sc">%&gt;%</span></span>
-<span id="cb13-41"><a href="#cb13-41" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">legal_systems =</span> <span class="fu">if_else</span>(</span>
-<span id="cb13-42"><a href="#cb13-42" aria-hidden="true" tabindex="-1"></a>    city <span class="sc">%in%</span> <span class="st">"Montreal"</span>, <span class="st">"Mixed"</span>, legal_systems)) <span class="sc">%&gt;%</span></span>
-<span id="cb13-43"><a href="#cb13-43" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">mixed_systems_components =</span> <span class="fu">if_else</span>(</span>
-<span id="cb13-44"><a href="#cb13-44" aria-hidden="true" tabindex="-1"></a>    city <span class="sc">%in%</span> <span class="st">"Montreal"</span>, <span class="st">"Civil/Common"</span>, mixed_systems_components))</span>
-<span id="cb13-45"><a href="#cb13-45" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb13-46"><a href="#cb13-46" aria-hidden="true" tabindex="-1"></a><span class="co"># Unify legal system values format</span></span>
-<span id="cb13-47"><a href="#cb13-47" aria-hidden="true" tabindex="-1"></a>joined_1 <span class="ot">&lt;-</span> joined_1 <span class="sc">%&gt;%</span></span>
-<span id="cb13-48"><a href="#cb13-48" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">mixed_systems_components =</span> <span class="fu">gsub</span>(<span class="st">" "</span>, <span class="st">""</span>, mixed_systems_components)) <span class="sc">%&gt;%</span></span>
-<span id="cb13-49"><a href="#cb13-49" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">mixed_systems_components =</span> <span class="fu">gsub</span>(<span class="st">"law"</span>, <span class="st">""</span>, mixed_systems_components)) <span class="sc">%&gt;%</span></span>
-<span id="cb13-50"><a href="#cb13-50" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">legal_systems =</span> <span class="fu">gsub</span>(<span class="st">" "</span>, <span class="st">""</span>, legal_systems)) <span class="sc">%&gt;%</span></span>
-<span id="cb13-51"><a href="#cb13-51" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">legal_systems =</span> <span class="fu">gsub</span>(<span class="st">"law"</span>, <span class="st">""</span>, legal_systems)) <span class="sc">%&gt;%</span></span>
-<span id="cb13-52"><a href="#cb13-52" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">mixed_systems_components =</span> <span class="fu">if_else</span>(</span>
-<span id="cb13-53"><a href="#cb13-53" aria-hidden="true" tabindex="-1"></a>    <span class="fu">is.na</span>(mixed_systems_components), <span class="cn">NA</span>,</span>
-<span id="cb13-54"><a href="#cb13-54" aria-hidden="true" tabindex="-1"></a>    <span class="fu">sapply</span>(<span class="fu">strsplit</span>(mixed_systems_components, <span class="st">"/"</span>), \(parts) <span class="fu">paste</span>(<span class="fu">sort</span>(parts), <span class="at">collapse =</span> <span class="st">"/"</span>))))</span>
-<span id="cb13-55"><a href="#cb13-55" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb13-56"><a href="#cb13-56" aria-hidden="true" tabindex="-1"></a>joined_1 <span class="ot">&lt;-</span> joined_1 <span class="sc">%&gt;%</span></span>
-<span id="cb13-57"><a href="#cb13-57" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">diesel_usd_per_liter =</span> <span class="fu">coalesce</span>(</span>
-<span id="cb13-58"><a href="#cb13-58" aria-hidden="true" tabindex="-1"></a>    diesel_usd_per_liter_a, diesel_usd_per_liter_b))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb13-39"><a href="#cb13-39" aria-hidden="true" tabindex="-1"></a><span class="co">#CHOICE#</span></span>
+<span id="cb13-40"><a href="#cb13-40" aria-hidden="true" tabindex="-1"></a><span class="co"># note: split colonial past?</span></span>
+<span id="cb13-41"><a href="#cb13-41" aria-hidden="true" tabindex="-1"></a><span class="co"># Correct legal systems for cit(y/ies) that differ from their greater nation</span></span>
+<span id="cb13-42"><a href="#cb13-42" aria-hidden="true" tabindex="-1"></a>joined_1 <span class="ot">&lt;-</span> joined_1 <span class="sc">%&gt;%</span></span>
+<span id="cb13-43"><a href="#cb13-43" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">legal_systems =</span> <span class="fu">if_else</span>(</span>
+<span id="cb13-44"><a href="#cb13-44" aria-hidden="true" tabindex="-1"></a>    city <span class="sc">%in%</span> <span class="st">"Montreal"</span>, <span class="st">"Mixed"</span>, legal_systems)) <span class="sc">%&gt;%</span></span>
+<span id="cb13-45"><a href="#cb13-45" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">mixed_systems_components =</span> <span class="fu">if_else</span>(</span>
+<span id="cb13-46"><a href="#cb13-46" aria-hidden="true" tabindex="-1"></a>    city <span class="sc">%in%</span> <span class="st">"Montreal"</span>, <span class="st">"Civil/Common"</span>, mixed_systems_components))</span>
+<span id="cb13-47"><a href="#cb13-47" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-48"><a href="#cb13-48" aria-hidden="true" tabindex="-1"></a><span class="co"># Unify legal system values format</span></span>
+<span id="cb13-49"><a href="#cb13-49" aria-hidden="true" tabindex="-1"></a>joined_1 <span class="ot">&lt;-</span> joined_1 <span class="sc">%&gt;%</span></span>
+<span id="cb13-50"><a href="#cb13-50" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">mixed_systems_components =</span> <span class="fu">gsub</span>(<span class="st">" "</span>, <span class="st">""</span>, mixed_systems_components)) <span class="sc">%&gt;%</span></span>
+<span id="cb13-51"><a href="#cb13-51" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">mixed_systems_components =</span> <span class="fu">gsub</span>(<span class="st">"law"</span>, <span class="st">""</span>, mixed_systems_components)) <span class="sc">%&gt;%</span></span>
+<span id="cb13-52"><a href="#cb13-52" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">legal_systems =</span> <span class="fu">gsub</span>(<span class="st">" "</span>, <span class="st">""</span>, legal_systems)) <span class="sc">%&gt;%</span></span>
+<span id="cb13-53"><a href="#cb13-53" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">legal_systems =</span> <span class="fu">gsub</span>(<span class="st">"law"</span>, <span class="st">""</span>, legal_systems)) <span class="sc">%&gt;%</span></span>
+<span id="cb13-54"><a href="#cb13-54" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">mixed_systems_components =</span> <span class="fu">if_else</span>(</span>
+<span id="cb13-55"><a href="#cb13-55" aria-hidden="true" tabindex="-1"></a>    <span class="fu">is.na</span>(mixed_systems_components), <span class="cn">NA</span>,</span>
+<span id="cb13-56"><a href="#cb13-56" aria-hidden="true" tabindex="-1"></a>    <span class="fu">sapply</span>(<span class="fu">strsplit</span>(mixed_systems_components, <span class="st">"/"</span>), \(parts) <span class="fu">paste</span>(<span class="fu">sort</span>(parts), <span class="at">collapse =</span> <span class="st">"/"</span>))))</span>
+<span id="cb13-57"><a href="#cb13-57" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-58"><a href="#cb13-58" aria-hidden="true" tabindex="-1"></a><span class="co"># create 1 diesel price variale</span></span>
+<span id="cb13-59"><a href="#cb13-59" aria-hidden="true" tabindex="-1"></a>joined_1 <span class="ot">&lt;-</span> joined_1 <span class="sc">%&gt;%</span></span>
+<span id="cb13-60"><a href="#cb13-60" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">diesel_usd_per_liter =</span> <span class="fu">coalesce</span>(</span>
+<span id="cb13-61"><a href="#cb13-61" aria-hidden="true" tabindex="-1"></a>    diesel_usd_per_liter_a, diesel_usd_per_liter_b))</span>
+<span id="cb13-62"><a href="#cb13-62" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-63"><a href="#cb13-63" aria-hidden="true" tabindex="-1"></a><span class="co"># remove opbservations without dependent var values</span></span>
+<span id="cb13-64"><a href="#cb13-64" aria-hidden="true" tabindex="-1"></a>joined_1 <span class="ot">&lt;-</span> joined_1 <span class="sc">%&gt;%</span></span>
+<span id="cb13-65"><a href="#cb13-65" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(cost_km_2025_dollars))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </section>
 <section id="transform-variables" class="level3">
@@ -530,18 +540,19 @@ Caused by warning:
 <span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Make variables for stations/km and platform m/km</span></span>
 <span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">stations_per_km =</span> stations<span class="sc">/</span>length) <span class="sc">%&gt;%</span></span>
 <span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">platfrom_m_per_km =</span> stations_per_km<span class="sc">*</span>platform_length_meters) <span class="sc">%&gt;%</span></span>
-<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Make col_ruler_2 where uncolonized countries are marked as their own col origin</span></span>
-<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">col_ruler_2 =</span> <span class="fu">if_else</span>(<span class="fu">is.na</span>(col_ruler_iso3c), iso3c, col_ruler_iso3c)) <span class="sc">%&gt;%</span></span>
-<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Make legal_systems_2, where 'Mixed' _&gt; value of mixed_systems_components</span></span>
-<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">legal_systems_2 =</span> <span class="fu">if_else</span>(</span>
-<span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a>    legal_systems <span class="sc">==</span> <span class="st">"Mixed"</span>, mixed_systems_components, legal_systems))</span>
-<span id="cb14-15"><a href="#cb14-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a>  <span class="co">#CHOICE#</span></span>
+<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Make col_ruler_2 where uncolonized countries are marked as their own col origin</span></span>
+<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">col_ruler_2 =</span> <span class="fu">if_else</span>(<span class="fu">is.na</span>(col_ruler_iso3c), iso3c, col_ruler_iso3c)) <span class="sc">%&gt;%</span></span>
+<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Make legal_systems_2, where 'Mixed' _&gt; value of mixed_systems_components</span></span>
+<span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">legal_systems_2 =</span> <span class="fu">if_else</span>(</span>
+<span id="cb14-15"><a href="#cb14-15" aria-hidden="true" tabindex="-1"></a>    legal_systems <span class="sc">==</span> <span class="st">"Mixed"</span>, mixed_systems_components, legal_systems))</span>
 <span id="cb14-16"><a href="#cb14-16" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-17"><a href="#cb14-17" aria-hidden="true" tabindex="-1"></a><span class="co"># Remove irrelevent variables</span></span>
-<span id="cb14-18"><a href="#cb14-18" aria-hidden="true" tabindex="-1"></a>joined_2_trim <span class="ot">&lt;-</span> joined_2 <span class="sc">%&gt;%</span></span>
-<span id="cb14-19"><a href="#cb14-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(<span class="sc">-</span><span class="fu">c</span>(tunnel, elevated, atgrade, stations, platform_length_meters,</span>
-<span id="cb14-20"><a href="#cb14-20" aria-hidden="true" tabindex="-1"></a>            legal_systems, mixed_systems_components, col_ruler_iso3c,</span>
-<span id="cb14-21"><a href="#cb14-21" aria-hidden="true" tabindex="-1"></a>            diesel_usd_per_liter_a, diesel_usd_per_liter_b))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb14-17"><a href="#cb14-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-18"><a href="#cb14-18" aria-hidden="true" tabindex="-1"></a><span class="co"># Remove irrelevent variables</span></span>
+<span id="cb14-19"><a href="#cb14-19" aria-hidden="true" tabindex="-1"></a>joined_2_trim <span class="ot">&lt;-</span> joined_2 <span class="sc">%&gt;%</span></span>
+<span id="cb14-20"><a href="#cb14-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(<span class="sc">-</span><span class="fu">c</span>(id, tunnel, elevated, atgrade, stations, platform_length_meters,</span>
+<span id="cb14-21"><a href="#cb14-21" aria-hidden="true" tabindex="-1"></a>            legal_systems, mixed_systems_components, col_ruler_iso3c,</span>
+<span id="cb14-22"><a href="#cb14-22" aria-hidden="true" tabindex="-1"></a>            diesel_usd_per_liter_a, diesel_usd_per_liter_b))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </section>
 </section>
@@ -549,91 +560,415 @@ Caused by warning:
 <h1>Data Exploration</h1>
 <p>round(cor_matrix, 2)</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="co"># create correlation matrix</span></span>
-<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>cor_matrix <span class="ot">&lt;-</span> joined_2_trim <span class="sc">%&gt;%</span></span>
-<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(<span class="sc">-</span>id) <span class="sc">%&gt;%</span></span>
-<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(<span class="fu">where</span>(is.numeric)) <span class="sc">%&gt;%</span></span>
-<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">cor</span>(<span class="at">use =</span> <span class="st">"pairwise.complete.obs"</span>)</span>
-<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>cor_round <span class="ot">&lt;-</span> <span class="fu">round</span>(cor_matrix, <span class="dv">2</span>)</span>
-<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a><span class="fu">colnames</span>(cor_round) <span class="ot">&lt;-</span> <span class="fu">abbreviate</span>(<span class="fu">colnames</span>(cor_round), <span class="dv">4</span>)</span>
-<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a>cor_round</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>num_vars <span class="ot">&lt;-</span> joined_2_trim <span class="sc">%&gt;%</span> <span class="fu">select</span>(<span class="fu">where</span>(is.numeric), <span class="sc">-</span>cost_km_2025_dollars) <span class="sc">%&gt;%</span> <span class="fu">names</span>()</span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>cat_vars <span class="ot">&lt;-</span> joined_2_trim <span class="sc">%&gt;%</span> <span class="fu">select</span>(<span class="sc">!</span><span class="fu">where</span>(is.numeric)) <span class="sc">%&gt;%</span> <span class="fu">names</span>()</span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 1: Correlation of each numeric variable with the dependent, ranked by strength</span></span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>cor_out <span class="ot">&lt;-</span> <span class="fu">sapply</span>(num_vars, \(v) <span class="fu">cor</span>(joined_2_trim[[v]], joined_2_trim<span class="sc">$</span>cost_km_2025_dollars, <span class="at">use =</span> <span class="st">"complete.obs"</span>))</span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>(cor_out[<span class="fu">order</span>(<span class="sc">-</span><span class="fu">abs</span>(cor_out))], <span class="dv">2</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>              platfrom_m_per_km                  wage_per_month 
+                           0.40                            0.39 
+gdp_per_capita_constant_2015_us            trade_percent_of_gdp 
+                           0.27                            0.24 
+             regulatory_quality                     rule_of_law 
+                           0.20                            0.19 
+          control_of_corruption        voice_and_accountability 
+                           0.18                            0.17 
+                     tunnel_per        government_effectiveness 
+                           0.15                            0.13 
+                         length                              rr 
+                          -0.12                            0.12 
+            political_stability                    elevated_per 
+                           0.11                           -0.11 
+                    atgrade_per                 stations_per_km 
+                          -0.07                            0.07 
+           diesel_usd_per_liter                            year 
+                          -0.06                           -0.03 </code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 2: Correlations among regressors (long format, reused below)</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>cor_mat <span class="ot">&lt;-</span> joined_2_trim <span class="sc">%&gt;%</span> <span class="fu">select</span>(<span class="fu">all_of</span>(num_vars)) <span class="sc">%&gt;%</span> <span class="fu">cor</span>(<span class="at">use =</span> <span class="st">"pairwise.complete.obs"</span>)</span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>cor_long <span class="ot">&lt;-</span> cor_mat <span class="sc">%&gt;%</span></span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">as.data.frame</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">var1 =</span> <span class="fu">rownames</span>(cor_mat)) <span class="sc">%&gt;%</span></span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_longer</span>(<span class="sc">-</span>var1, <span class="at">names_to =</span> <span class="st">"var2"</span>, <span class="at">values_to =</span> <span class="st">"r"</span>)</span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(cor_long, <span class="fu">aes</span>(<span class="at">x =</span> var1, <span class="at">y =</span> var2, <span class="at">fill =</span> r)) <span class="sc">+</span></span>
+<span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_tile</span>() <span class="sc">+</span></span>
+<span id="cb17-11"><a href="#cb17-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_fill_gradient2</span>(<span class="at">limits =</span> <span class="fu">c</span>(<span class="sc">-</span><span class="dv">1</span>, <span class="dv">1</span>)) <span class="sc">+</span></span>
+<span id="cb17-12"><a href="#cb17-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">axis.text.x =</span> <span class="fu">element_text</span>(<span class="at">angle =</span> <span class="dv">90</span>, <span class="at">hjust =</span> <span class="dv">1</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="capstone_data_exploration_files/figure-html/explore-var-relations-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 3: Flag highly correlated regressor pairs (multicollinearity risk)</span></span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>cor_long <span class="sc">%&gt;%</span></span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(var1 <span class="sc">&lt;</span> var2, <span class="fu">abs</span>(r) <span class="sc">&gt;</span> <span class="fl">0.8</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(<span class="fu">desc</span>(<span class="fu">abs</span>(r)))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 18 × 3
+   var1                            var2                                r
+   &lt;chr&gt;                           &lt;chr&gt;                           &lt;dbl&gt;
+ 1 regulatory_quality              rule_of_law                     0.959
+ 2 control_of_corruption           regulatory_quality              0.946
+ 3 control_of_corruption           government_effectiveness        0.944
+ 4 control_of_corruption           rule_of_law                     0.933
+ 5 gdp_per_capita_constant_2015_us wage_per_month                  0.932
+ 6 rule_of_law                     voice_and_accountability        0.907
+ 7 government_effectiveness        rule_of_law                     0.879
+ 8 political_stability             rule_of_law                     0.879
+ 9 gdp_per_capita_constant_2015_us rule_of_law                     0.878
+10 government_effectiveness        regulatory_quality              0.878
+11 control_of_corruption           gdp_per_capita_constant_2015_us 0.876
+12 gdp_per_capita_constant_2015_us regulatory_quality              0.871
+13 control_of_corruption           political_stability             0.865
+14 political_stability             regulatory_quality              0.862
+15 regulatory_quality              wage_per_month                  0.856
+16 government_effectiveness        political_stability             0.853
+17 control_of_corruption           wage_per_month                  0.826
+18 regulatory_quality              voice_and_accountability        0.824</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 4: Outcome vs. every numeric variable, one faceted plot</span></span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>joined_2_trim <span class="sc">%&gt;%</span></span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(cost_km_2025_dollars, <span class="fu">all_of</span>(num_vars)) <span class="sc">%&gt;%</span></span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_longer</span>(<span class="sc">-</span>cost_km_2025_dollars, <span class="at">names_to =</span> <span class="st">"var"</span>, <span class="at">values_to =</span> <span class="st">"value"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> value, <span class="at">y =</span> cost_km_2025_dollars)) <span class="sc">+</span></span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">alpha =</span> <span class="fl">0.5</span>) <span class="sc">+</span></span>
+<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_smooth</span>(<span class="at">method =</span> <span class="st">"lm"</span>, <span class="at">se =</span> <span class="cn">FALSE</span>) <span class="sc">+</span></span>
+<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">facet_wrap</span>(<span class="sc">~</span> var, <span class="at">scales =</span> <span class="st">"free_x"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>`geom_smooth()` using formula = 'y ~ x'</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: Removed 3325 rows containing non-finite outside the scale range
+(`stat_smooth()`).</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: Removed 3325 rows containing missing values or values outside the scale range
+(`geom_point()`).</code></pre>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="capstone_data_exploration_files/figure-html/explore-var-relations-2.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 5: Outcome by every (relevent) categorical variable</span></span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a>  <span class="co"># col_ruler_2 and legal_systems_2</span></span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a>joined_2_trim <span class="sc">%&gt;%</span></span>
+<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(cost_km_2025_dollars, <span class="fu">all_of</span>(cat_vars)) <span class="sc">%&gt;%</span></span>
+<span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(<span class="sc">-</span><span class="fu">c</span>(city, line, phase, iso3c)) <span class="sc">%&gt;%</span></span>
+<span id="cb24-6"><a href="#cb24-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_longer</span>(<span class="sc">-</span>cost_km_2025_dollars, <span class="at">names_to =</span> <span class="st">"var"</span>, <span class="at">values_to =</span> <span class="st">"level"</span>,</span>
+<span id="cb24-7"><a href="#cb24-7" aria-hidden="true" tabindex="-1"></a>               <span class="at">values_transform =</span> as.character) <span class="sc">%&gt;%</span></span>
+<span id="cb24-8"><a href="#cb24-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> cost_km_2025_dollars,</span>
+<span id="cb24-9"><a href="#cb24-9" aria-hidden="true" tabindex="-1"></a>             <span class="at">y =</span> <span class="fu">reorder</span>(level, cost_km_2025_dollars, median, <span class="at">na.rm =</span> <span class="cn">TRUE</span>))) <span class="sc">+</span></span>
+<span id="cb24-10"><a href="#cb24-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_boxplot</span>() <span class="sc">+</span></span>
+<span id="cb24-11"><a href="#cb24-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">facet_wrap</span>(<span class="sc">~</span> var, <span class="at">scales =</span> <span class="st">"free_y"</span>) <span class="sc">+</span></span>
+<span id="cb24-12"><a href="#cb24-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">y =</span> <span class="st">"level"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="capstone_data_exploration_files/figure-html/explore-var-relations-3.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># by country</span></span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a>joined_2_trim <span class="sc">%&gt;%</span></span>
+<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(iso3c) <span class="sc">%&gt;%</span></span>
+<span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">med =</span> <span class="fu">median</span>(cost_km_2025_dollars, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb25-5"><a href="#cb25-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ungroup</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb25-6"><a href="#cb25-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">half =</span> <span class="fu">factor</span>(<span class="fu">if_else</span>(<span class="fu">dense_rank</span>(med) <span class="sc">&lt;=</span> <span class="fu">n_distinct</span>(iso3c) <span class="sc">/</span> <span class="dv">2</span>,</span>
+<span id="cb25-7"><a href="#cb25-7" aria-hidden="true" tabindex="-1"></a>                               <span class="st">"Lower-cost half"</span>, <span class="st">"Upper-cost half"</span>),</span>
+<span id="cb25-8"><a href="#cb25-8" aria-hidden="true" tabindex="-1"></a>                       <span class="at">levels =</span> <span class="fu">c</span>(<span class="st">"Upper-cost half"</span>, <span class="st">"Lower-cost half"</span>))) <span class="sc">%&gt;%</span></span>
+<span id="cb25-9"><a href="#cb25-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> cost_km_2025_dollars,</span>
+<span id="cb25-10"><a href="#cb25-10" aria-hidden="true" tabindex="-1"></a>             <span class="at">y =</span> <span class="fu">reorder</span>(iso3c, cost_km_2025_dollars, median, <span class="at">na.rm =</span> <span class="cn">TRUE</span>))) <span class="sc">+</span></span>
+<span id="cb25-11"><a href="#cb25-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_boxplot</span>() <span class="sc">+</span></span>
+<span id="cb25-12"><a href="#cb25-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">facet_wrap</span>(<span class="sc">~</span> half, <span class="at">scales =</span> <span class="st">"free_y"</span>) <span class="sc">+</span></span>
+<span id="cb25-13"><a href="#cb25-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">y =</span> <span class="st">"iso3c"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="capstone_data_exploration_files/figure-html/explore-var-relations-4.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 6: Bivariate regression for each numeric variable (slope and p-value)</span></span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a>biv <span class="ot">&lt;-</span> <span class="fu">t</span>(<span class="fu">sapply</span>(num_vars, \(v)</span>
+<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a>                <span class="fu">summary</span>(<span class="fu">lm</span>(<span class="fu">reformulate</span>(v, <span class="st">"cost_km_2025_dollars"</span>), <span class="at">data =</span> joined_2_trim))<span class="sc">$</span>coefficients[<span class="dv">2</span>, <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">4</span>)]))</span>
+<span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>(biv, <span class="dv">3</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>                                Estimate Pr(&gt;|t|)
+rr                               121.926    0.000
+length                            -1.716    0.000
+year                              -1.168    0.271
+government_effectiveness           2.730    0.000
+control_of_corruption              3.323    0.000
+political_stability                2.866    0.000
+regulatory_quality                 4.448    0.000
+rule_of_law                        3.706    0.000
+voice_and_accountability           2.092    0.000
+gdp_per_capita_constant_2015_us    0.005    0.000
+trade_percent_of_gdp               1.459    0.000
+wage_per_month                    22.803    0.000
+diesel_usd_per_liter             -51.336    0.042
+tunnel_per                       119.335    0.000
+elevated_per                    -157.201    0.005
+atgrade_per                     -153.701    0.063
+stations_per_km                   64.527    0.019
+platfrom_m_per_km                  2.430    0.000</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb28"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a>joined_2_trim_no_max <span class="ot">&lt;-</span> joined_2_trim <span class="sc">%&gt;%</span></span>
+<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="fu">row_number</span>() <span class="sc">!=</span> <span class="fu">which.max</span>(cost_km_2025_dollars))</span>
+<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb28-4"><a href="#cb28-4" aria-hidden="true" tabindex="-1"></a>num_vars <span class="ot">&lt;-</span> joined_2_trim_no_max <span class="sc">%&gt;%</span> <span class="fu">select</span>(<span class="fu">where</span>(is.numeric), <span class="sc">-</span>cost_km_2025_dollars) <span class="sc">%&gt;%</span> <span class="fu">names</span>()</span>
+<span id="cb28-5"><a href="#cb28-5" aria-hidden="true" tabindex="-1"></a>cat_vars <span class="ot">&lt;-</span> joined_2_trim_no_max <span class="sc">%&gt;%</span> <span class="fu">select</span>(<span class="sc">!</span><span class="fu">where</span>(is.numeric)) <span class="sc">%&gt;%</span> <span class="fu">names</span>()</span>
+<span id="cb28-6"><a href="#cb28-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb28-7"><a href="#cb28-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 1: Correlation of each numeric variable with the dependent, ranked by strength</span></span>
+<span id="cb28-8"><a href="#cb28-8" aria-hidden="true" tabindex="-1"></a>cor_out <span class="ot">&lt;-</span> <span class="fu">sapply</span>(num_vars, \(v) <span class="fu">cor</span>(joined_2_trim_no_max[[v]], joined_2_trim_no_max<span class="sc">$</span>cost_km_2025_dollars, <span class="at">use =</span> <span class="st">"complete.obs"</span>))</span>
+<span id="cb28-9"><a href="#cb28-9" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>(cor_out[<span class="fu">order</span>(<span class="sc">-</span><span class="fu">abs</span>(cor_out))], <span class="dv">2</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>                 wage_per_month               platfrom_m_per_km 
+                           0.43                            0.40 
+           trade_percent_of_gdp gdp_per_capita_constant_2015_us 
+                           0.29                            0.28 
+             regulatory_quality                     rule_of_law 
+                           0.21                            0.19 
+          control_of_corruption        voice_and_accountability 
+                           0.19                            0.17 
+                     tunnel_per                          length 
+                           0.16                           -0.13 
+       government_effectiveness                    elevated_per 
+                           0.13                           -0.12 
+            political_stability                 stations_per_km 
+                           0.11                            0.10 
+                    atgrade_per                              rr 
+                          -0.08                            0.08 
+           diesel_usd_per_liter                            year 
+                          -0.07                           -0.04 </code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb30"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 2: Correlations among regressors (long format, reused below)</span></span>
+<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a>cor_mat <span class="ot">&lt;-</span> joined_2_trim_no_max <span class="sc">%&gt;%</span> <span class="fu">select</span>(<span class="fu">all_of</span>(num_vars)) <span class="sc">%&gt;%</span> <span class="fu">cor</span>(<span class="at">use =</span> <span class="st">"pairwise.complete.obs"</span>)</span>
+<span id="cb30-3"><a href="#cb30-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-4"><a href="#cb30-4" aria-hidden="true" tabindex="-1"></a>cor_long <span class="ot">&lt;-</span> cor_mat <span class="sc">%&gt;%</span></span>
+<span id="cb30-5"><a href="#cb30-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">as.data.frame</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb30-6"><a href="#cb30-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">var1 =</span> <span class="fu">rownames</span>(cor_mat)) <span class="sc">%&gt;%</span></span>
+<span id="cb30-7"><a href="#cb30-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_longer</span>(<span class="sc">-</span>var1, <span class="at">names_to =</span> <span class="st">"var2"</span>, <span class="at">values_to =</span> <span class="st">"r"</span>)</span>
+<span id="cb30-8"><a href="#cb30-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-9"><a href="#cb30-9" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(cor_long, <span class="fu">aes</span>(<span class="at">x =</span> var1, <span class="at">y =</span> var2, <span class="at">fill =</span> r)) <span class="sc">+</span></span>
+<span id="cb30-10"><a href="#cb30-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_tile</span>() <span class="sc">+</span></span>
+<span id="cb30-11"><a href="#cb30-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_fill_gradient2</span>(<span class="at">limits =</span> <span class="fu">c</span>(<span class="sc">-</span><span class="dv">1</span>, <span class="dv">1</span>)) <span class="sc">+</span></span>
+<span id="cb30-12"><a href="#cb30-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">axis.text.x =</span> <span class="fu">element_text</span>(<span class="at">angle =</span> <span class="dv">90</span>, <span class="at">hjust =</span> <span class="dv">1</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="capstone_data_exploration_files/figure-html/explore-var-relations-no-outlier-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb31"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 3: Flag highly correlated regressor pairs (multicollinearity risk)</span></span>
+<span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a>cor_long <span class="sc">%&gt;%</span></span>
+<span id="cb31-3"><a href="#cb31-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(var1 <span class="sc">&lt;</span> var2, <span class="fu">abs</span>(r) <span class="sc">&gt;</span> <span class="fl">0.8</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb31-4"><a href="#cb31-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(<span class="fu">desc</span>(<span class="fu">abs</span>(r)))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 18 × 3
+   var1                            var2                                r
+   &lt;chr&gt;                           &lt;chr&gt;                           &lt;dbl&gt;
+ 1 regulatory_quality              rule_of_law                     0.959
+ 2 control_of_corruption           regulatory_quality              0.946
+ 3 control_of_corruption           government_effectiveness        0.944
+ 4 control_of_corruption           rule_of_law                     0.933
+ 5 gdp_per_capita_constant_2015_us wage_per_month                  0.931
+ 6 rule_of_law                     voice_and_accountability        0.907
+ 7 political_stability             rule_of_law                     0.878
+ 8 government_effectiveness        rule_of_law                     0.878
+ 9 gdp_per_capita_constant_2015_us rule_of_law                     0.878
+10 government_effectiveness        regulatory_quality              0.877
+11 control_of_corruption           gdp_per_capita_constant_2015_us 0.876
+12 gdp_per_capita_constant_2015_us regulatory_quality              0.871
+13 control_of_corruption           political_stability             0.865
+14 political_stability             regulatory_quality              0.862
+15 regulatory_quality              wage_per_month                  0.854
+16 government_effectiveness        political_stability             0.853
+17 regulatory_quality              voice_and_accountability        0.824
+18 control_of_corruption           wage_per_month                  0.824</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb33"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 4: Outcome vs. every numeric variable, one faceted plot</span></span>
+<span id="cb33-2"><a href="#cb33-2" aria-hidden="true" tabindex="-1"></a>joined_2_trim_no_max <span class="sc">%&gt;%</span></span>
+<span id="cb33-3"><a href="#cb33-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(cost_km_2025_dollars, <span class="fu">all_of</span>(num_vars)) <span class="sc">%&gt;%</span></span>
+<span id="cb33-4"><a href="#cb33-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_longer</span>(<span class="sc">-</span>cost_km_2025_dollars, <span class="at">names_to =</span> <span class="st">"var"</span>, <span class="at">values_to =</span> <span class="st">"value"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb33-5"><a href="#cb33-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> value, <span class="at">y =</span> cost_km_2025_dollars)) <span class="sc">+</span></span>
+<span id="cb33-6"><a href="#cb33-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">alpha =</span> <span class="fl">0.5</span>) <span class="sc">+</span></span>
+<span id="cb33-7"><a href="#cb33-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_smooth</span>(<span class="at">method =</span> <span class="st">"lm"</span>, <span class="at">se =</span> <span class="cn">FALSE</span>) <span class="sc">+</span></span>
+<span id="cb33-8"><a href="#cb33-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">facet_wrap</span>(<span class="sc">~</span> var, <span class="at">scales =</span> <span class="st">"free_x"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>`geom_smooth()` using formula = 'y ~ x'</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: Removed 3324 rows containing non-finite outside the scale range
+(`stat_smooth()`).</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: Removed 3324 rows containing missing values or values outside the scale range
+(`geom_point()`).</code></pre>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="capstone_data_exploration_files/figure-html/explore-var-relations-no-outlier-2.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb37"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 5: Outcome by every (relevent) categorical variable</span></span>
+<span id="cb37-2"><a href="#cb37-2" aria-hidden="true" tabindex="-1"></a>  <span class="co"># col_ruler_2 and legal_systems_2</span></span>
+<span id="cb37-3"><a href="#cb37-3" aria-hidden="true" tabindex="-1"></a>joined_2_trim_no_max <span class="sc">%&gt;%</span></span>
+<span id="cb37-4"><a href="#cb37-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(cost_km_2025_dollars, <span class="fu">all_of</span>(cat_vars)) <span class="sc">%&gt;%</span></span>
+<span id="cb37-5"><a href="#cb37-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(<span class="sc">-</span><span class="fu">c</span>(city, line, phase, iso3c)) <span class="sc">%&gt;%</span></span>
+<span id="cb37-6"><a href="#cb37-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_longer</span>(<span class="sc">-</span>cost_km_2025_dollars, <span class="at">names_to =</span> <span class="st">"var"</span>, <span class="at">values_to =</span> <span class="st">"level"</span>,</span>
+<span id="cb37-7"><a href="#cb37-7" aria-hidden="true" tabindex="-1"></a>               <span class="at">values_transform =</span> as.character) <span class="sc">%&gt;%</span></span>
+<span id="cb37-8"><a href="#cb37-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> cost_km_2025_dollars, <span class="at">y =</span> level)) <span class="sc">+</span></span>
+<span id="cb37-9"><a href="#cb37-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_boxplot</span>() <span class="sc">+</span></span>
+<span id="cb37-10"><a href="#cb37-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">facet_wrap</span>(<span class="sc">~</span> var, <span class="at">scales =</span> <span class="st">"free_y"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="capstone_data_exploration_files/figure-html/explore-var-relations-no-outlier-3.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb38"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># by country</span></span>
+<span id="cb38-2"><a href="#cb38-2" aria-hidden="true" tabindex="-1"></a>joined_2_trim_no_max <span class="sc">%&gt;%</span></span>
+<span id="cb38-3"><a href="#cb38-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(iso3c) <span class="sc">%&gt;%</span></span>
+<span id="cb38-4"><a href="#cb38-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">med =</span> <span class="fu">median</span>(cost_km_2025_dollars, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb38-5"><a href="#cb38-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ungroup</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb38-6"><a href="#cb38-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">half =</span> <span class="fu">factor</span>(<span class="fu">if_else</span>(<span class="fu">dense_rank</span>(med) <span class="sc">&lt;=</span> <span class="fu">n_distinct</span>(iso3c) <span class="sc">/</span> <span class="dv">2</span>,</span>
+<span id="cb38-7"><a href="#cb38-7" aria-hidden="true" tabindex="-1"></a>                               <span class="st">"Lower-cost half"</span>, <span class="st">"Upper-cost half"</span>),</span>
+<span id="cb38-8"><a href="#cb38-8" aria-hidden="true" tabindex="-1"></a>                       <span class="at">levels =</span> <span class="fu">c</span>(<span class="st">"Upper-cost half"</span>, <span class="st">"Lower-cost half"</span>))) <span class="sc">%&gt;%</span></span>
+<span id="cb38-9"><a href="#cb38-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> cost_km_2025_dollars,</span>
+<span id="cb38-10"><a href="#cb38-10" aria-hidden="true" tabindex="-1"></a>             <span class="at">y =</span> <span class="fu">reorder</span>(iso3c, cost_km_2025_dollars, median, <span class="at">na.rm =</span> <span class="cn">TRUE</span>))) <span class="sc">+</span></span>
+<span id="cb38-11"><a href="#cb38-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_boxplot</span>() <span class="sc">+</span></span>
+<span id="cb38-12"><a href="#cb38-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">facet_wrap</span>(<span class="sc">~</span> half, <span class="at">scales =</span> <span class="st">"free_y"</span>) <span class="sc">+</span></span>
+<span id="cb38-13"><a href="#cb38-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">y =</span> <span class="st">"iso3c"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="capstone_data_exploration_files/figure-html/explore-var-relations-no-outlier-4.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb39"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 6: Bivariate regression for each numeric variable (slope and p-value)</span></span>
+<span id="cb39-2"><a href="#cb39-2" aria-hidden="true" tabindex="-1"></a>biv <span class="ot">&lt;-</span> <span class="fu">t</span>(<span class="fu">sapply</span>(num_vars, \(v)</span>
+<span id="cb39-3"><a href="#cb39-3" aria-hidden="true" tabindex="-1"></a>                <span class="fu">summary</span>(<span class="fu">lm</span>(<span class="fu">reformulate</span>(v, <span class="st">"cost_km_2025_dollars"</span>), <span class="at">data =</span> joined_2_trim_no_max))<span class="sc">$</span>coefficients[<span class="dv">2</span>, <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">4</span>)]))</span>
+<span id="cb39-4"><a href="#cb39-4" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>(biv, <span class="dv">3</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>                                Estimate Pr(&gt;|t|)
+rr                                66.380    0.012
+length                            -1.528    0.000
+year                              -1.085    0.226
+government_effectiveness           2.243    0.000
+control_of_corruption              2.907    0.000
+political_stability                2.370    0.000
+regulatory_quality                 3.916    0.000
+rule_of_law                        3.169    0.000
+voice_and_accountability           1.785    0.000
+gdp_per_capita_constant_2015_us    0.004    0.000
+trade_percent_of_gdp               1.519    0.000
+wage_per_month                    18.101    0.000
+diesel_usd_per_liter             -49.004    0.018
+tunnel_per                       110.621    0.000
+elevated_per                    -144.930    0.002
+atgrade_per                     -141.344    0.039
+stations_per_km                   81.220    0.000
+platfrom_m_per_km                  2.430    0.000</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb41"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a><span class="co"># create correlation matrix</span></span>
+<span id="cb41-2"><a href="#cb41-2" aria-hidden="true" tabindex="-1"></a>cor_matrix <span class="ot">&lt;-</span> joined_2_trim <span class="sc">%&gt;%</span></span>
+<span id="cb41-3"><a href="#cb41-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(<span class="fu">where</span>(is.numeric)) <span class="sc">%&gt;%</span></span>
+<span id="cb41-4"><a href="#cb41-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">cor</span>(<span class="at">use =</span> <span class="st">"pairwise.complete.obs"</span>)</span>
+<span id="cb41-5"><a href="#cb41-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb41-6"><a href="#cb41-6" aria-hidden="true" tabindex="-1"></a>cor_round <span class="ot">&lt;-</span> <span class="fu">round</span>(cor_matrix, <span class="dv">2</span>)</span>
+<span id="cb41-7"><a href="#cb41-7" aria-hidden="true" tabindex="-1"></a><span class="fu">colnames</span>(cor_round) <span class="ot">&lt;-</span> <span class="fu">abbreviate</span>(<span class="fu">colnames</span>(cor_round), <span class="dv">4</span>)</span>
+<span id="cb41-8"><a href="#cb41-8" aria-hidden="true" tabindex="-1"></a>cor_round</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>                                   rr  lngt  year  c__2  gvr_  cn__  plt_  rgl_
-rr                               1.00  0.09 -0.09  0.12  0.26  0.26  0.26  0.24
-length                           0.09  1.00  0.07 -0.12 -0.15 -0.19 -0.22 -0.21
-year                            -0.09  0.07  1.00 -0.03  0.11 -0.04 -0.10 -0.18
+rr                               1.00  0.04 -0.10  0.12  0.26  0.27  0.27  0.24
+length                           0.04  1.00  0.07 -0.12 -0.16 -0.20 -0.22 -0.22
+year                            -0.10  0.07  1.00 -0.03  0.11 -0.04 -0.10 -0.18
 cost_km_2025_dollars             0.12 -0.12 -0.03  1.00  0.13  0.18  0.11  0.20
-government_effectiveness         0.26 -0.15  0.11  0.13  1.00  0.94  0.85  0.88
-control_of_corruption            0.26 -0.19 -0.04  0.18  0.94  1.00  0.87  0.95
-political_stability              0.26 -0.22 -0.10  0.11  0.85  0.87  1.00  0.86
-regulatory_quality               0.24 -0.21 -0.18  0.20  0.88  0.95  0.86  1.00
-rule_of_law                      0.24 -0.24 -0.14  0.19  0.88  0.93  0.88  0.96
+government_effectiveness         0.26 -0.16  0.11  0.13  1.00  0.94  0.85  0.88
+control_of_corruption            0.27 -0.20 -0.04  0.18  0.94  1.00  0.87  0.95
+political_stability              0.27 -0.22 -0.10  0.11  0.85  0.87  1.00  0.86
+regulatory_quality               0.24 -0.22 -0.18  0.20  0.88  0.95  0.86  1.00
+rule_of_law                      0.25 -0.24 -0.14  0.19  0.88  0.93  0.88  0.96
 voice_and_accountability         0.17 -0.31 -0.17  0.17  0.67  0.74  0.72  0.82
 gdp_per_capita_constant_2015_us  0.22 -0.24 -0.04  0.27  0.80  0.88  0.79  0.87
-trade_percent_of_gdp             0.07 -0.08 -0.13  0.24  0.26  0.35  0.35  0.46
-wage_per_month                   0.16 -0.29  0.11  0.39  0.78  0.82  0.59  0.85
-diesel_usd_per_liter             0.06 -0.20  0.11 -0.06  0.40  0.41  0.40  0.44
-tunnel_per                      -0.05 -0.21  0.08  0.15  0.00  0.02  0.07 -0.03
-elevated_per                    -0.05  0.05 -0.11 -0.11 -0.07 -0.11 -0.06 -0.08
-atgrade_per                      0.07  0.07 -0.02 -0.07  0.22  0.24  0.23  0.23
-stations_per_km                   NaN   NaN   NaN  0.07   NaN   NaN   NaN   NaN
-platfrom_m_per_km                 NaN   NaN   NaN  0.40   NaN   NaN   NaN   NaN
+trade_percent_of_gdp             0.07 -0.08 -0.14  0.24  0.26  0.35  0.34  0.45
+wage_per_month                   0.18 -0.29  0.11  0.39  0.79  0.83  0.59  0.86
+diesel_usd_per_liter             0.06 -0.20  0.12 -0.06  0.39  0.41  0.40  0.44
+tunnel_per                      -0.01 -0.18  0.09  0.15  0.01  0.02  0.07 -0.02
+elevated_per                    -0.05  0.04 -0.12 -0.11 -0.07 -0.12 -0.06 -0.08
+atgrade_per                      0.04 -0.04 -0.03 -0.07  0.22  0.24  0.23  0.23
+stations_per_km                 -0.28 -0.26 -0.16  0.07  0.15  0.18  0.22  0.23
+platfrom_m_per_km               -0.11 -0.33 -0.23  0.40  0.15  0.14  0.20  0.20
                                  rl__  vc__  g___  t___  wg__  d___  tnn_  elv_
-rr                               0.24  0.17  0.22  0.07  0.16  0.06 -0.05 -0.05
-length                          -0.24 -0.31 -0.24 -0.08 -0.29 -0.20 -0.21  0.05
-year                            -0.14 -0.17 -0.04 -0.13  0.11  0.11  0.08 -0.11
+rr                               0.25  0.17  0.22  0.07  0.18  0.06 -0.01 -0.05
+length                          -0.24 -0.31 -0.24 -0.08 -0.29 -0.20 -0.18  0.04
+year                            -0.14 -0.17 -0.04 -0.14  0.11  0.12  0.09 -0.12
 cost_km_2025_dollars             0.19  0.17  0.27  0.24  0.39 -0.06  0.15 -0.11
-government_effectiveness         0.88  0.67  0.80  0.26  0.78  0.40  0.00 -0.07
-control_of_corruption            0.93  0.74  0.88  0.35  0.82  0.41  0.02 -0.11
-political_stability              0.88  0.72  0.79  0.35  0.59  0.40  0.07 -0.06
-regulatory_quality               0.96  0.82  0.87  0.46  0.85  0.44 -0.03 -0.08
+government_effectiveness         0.88  0.67  0.80  0.26  0.79  0.39  0.01 -0.07
+control_of_corruption            0.93  0.74  0.88  0.35  0.83  0.41  0.02 -0.12
+political_stability              0.88  0.72  0.79  0.34  0.59  0.40  0.07 -0.06
+regulatory_quality               0.96  0.82  0.87  0.45  0.86  0.44 -0.02 -0.08
 rule_of_law                      1.00  0.91  0.88  0.38  0.78  0.43 -0.05 -0.08
-voice_and_accountability         0.91  1.00  0.77  0.32  0.62  0.47 -0.09 -0.09
-gdp_per_capita_constant_2015_us  0.88  0.77  1.00  0.31  0.93  0.34  0.02 -0.12
-trade_percent_of_gdp             0.38  0.32  0.31  1.00 -0.15  0.18 -0.05 -0.03
-wage_per_month                   0.78  0.62  0.93 -0.15  1.00  0.01  0.23 -0.13
-diesel_usd_per_liter             0.43  0.47  0.34  0.18  0.01  1.00  0.18 -0.12
-tunnel_per                      -0.05 -0.09  0.02 -0.05  0.23  0.18  1.00 -0.51
-elevated_per                    -0.08 -0.09 -0.12 -0.03 -0.13 -0.12 -0.51  1.00
-atgrade_per                      0.24  0.23  0.22  0.04  0.21  0.00 -0.36  0.08
-stations_per_km                   NaN   NaN   NaN   NaN -0.22   NaN  0.12 -0.04
-platfrom_m_per_km                 NaN   NaN   NaN   NaN -0.06   NaN  0.32 -0.03
+voice_and_accountability         0.91  1.00  0.77  0.32  0.63  0.48 -0.09 -0.09
+gdp_per_capita_constant_2015_us  0.88  0.77  1.00  0.31  0.93  0.33  0.02 -0.12
+trade_percent_of_gdp             0.38  0.32  0.31  1.00 -0.17  0.19 -0.04 -0.05
+wage_per_month                   0.78  0.63  0.93 -0.17  1.00 -0.03  0.23 -0.13
+diesel_usd_per_liter             0.43  0.48  0.33  0.19 -0.03  1.00  0.18 -0.12
+tunnel_per                      -0.05 -0.09  0.02 -0.04  0.23  0.18  1.00 -0.49
+elevated_per                    -0.08 -0.09 -0.12 -0.05 -0.13 -0.12 -0.49  1.00
+atgrade_per                      0.24  0.22  0.22  0.04  0.21 -0.01 -0.35  0.10
+stations_per_km                  0.27  0.34  0.16  0.07 -0.24  0.20  0.10 -0.01
+platfrom_m_per_km                0.22  0.23  0.17  0.10 -0.06  0.06  0.33 -0.05
                                  atg_  st__  p___
-rr                               0.07   NaN   NaN
-length                           0.07   NaN   NaN
-year                            -0.02   NaN   NaN
+rr                               0.04 -0.28 -0.11
+length                          -0.04 -0.26 -0.33
+year                            -0.03 -0.16 -0.23
 cost_km_2025_dollars            -0.07  0.07  0.40
-government_effectiveness         0.22   NaN   NaN
-control_of_corruption            0.24   NaN   NaN
-political_stability              0.23   NaN   NaN
-regulatory_quality               0.23   NaN   NaN
-rule_of_law                      0.24   NaN   NaN
-voice_and_accountability         0.23   NaN   NaN
-gdp_per_capita_constant_2015_us  0.22   NaN   NaN
-trade_percent_of_gdp             0.04   NaN   NaN
-wage_per_month                   0.21 -0.22 -0.06
-diesel_usd_per_liter             0.00   NaN   NaN
-tunnel_per                      -0.36  0.12  0.32
-elevated_per                     0.08 -0.04 -0.03
-atgrade_per                      1.00  0.03 -0.09
-stations_per_km                  0.03   NaN   NaN
-platfrom_m_per_km               -0.09   NaN   NaN</code></pre>
+government_effectiveness         0.22  0.15  0.15
+control_of_corruption            0.24  0.18  0.14
+political_stability              0.23  0.22  0.20
+regulatory_quality               0.23  0.23  0.20
+rule_of_law                      0.24  0.27  0.22
+voice_and_accountability         0.22  0.34  0.23
+gdp_per_capita_constant_2015_us  0.22  0.16  0.17
+trade_percent_of_gdp             0.04  0.07  0.10
+wage_per_month                   0.21 -0.24 -0.06
+diesel_usd_per_liter            -0.01  0.20  0.06
+tunnel_per                      -0.35  0.10  0.33
+elevated_per                     0.10 -0.01 -0.05
+atgrade_per                      1.00  0.06 -0.09
+stations_per_km                  0.06  1.00  0.67
+platfrom_m_per_km               -0.09  0.67  1.00</code></pre>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>cor_round <span class="sc">%&gt;%</span></span>
-<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">as.data.frame</span>() <span class="sc">%&gt;%</span></span>
-<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rownames_to_column</span>(<span class="st">"var1"</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_longer</span>(<span class="sc">-</span>var1, <span class="at">names_to =</span> <span class="st">"var2"</span>, <span class="at">values_to =</span> <span class="st">"r"</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(var2, var1, <span class="at">fill =</span> r)) <span class="sc">+</span></span>
-<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_tile</span>() <span class="sc">+</span></span>
-<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_text</span>(<span class="fu">aes</span>(<span class="at">label =</span> r), <span class="at">size =</span> <span class="dv">3</span>) <span class="sc">+</span></span>
-<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_fill_gradient2</span>(<span class="at">limits =</span> <span class="fu">c</span>(<span class="sc">-</span><span class="dv">1</span>, <span class="dv">1</span>)) <span class="sc">+</span></span>
-<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="cn">NULL</span>, <span class="at">y =</span> <span class="cn">NULL</span>, <span class="at">fill =</span> <span class="st">"r"</span>) <span class="sc">+</span></span>
-<span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">axis.text.x =</span> <span class="fu">element_text</span>(<span class="at">angle =</span> <span class="dv">45</span>, <span class="at">hjust =</span> <span class="dv">1</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-stderr">
-<pre><code>Warning: Removed 52 rows containing missing values or values outside the scale range
-(`geom_text()`).</code></pre>
-</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb43"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb43-1"><a href="#cb43-1" aria-hidden="true" tabindex="-1"></a>cor_round <span class="sc">%&gt;%</span></span>
+<span id="cb43-2"><a href="#cb43-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">as.data.frame</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb43-3"><a href="#cb43-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rownames_to_column</span>(<span class="st">"var1"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb43-4"><a href="#cb43-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_longer</span>(<span class="sc">-</span>var1, <span class="at">names_to =</span> <span class="st">"var2"</span>, <span class="at">values_to =</span> <span class="st">"r"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb43-5"><a href="#cb43-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(var2, var1, <span class="at">fill =</span> r)) <span class="sc">+</span></span>
+<span id="cb43-6"><a href="#cb43-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_tile</span>() <span class="sc">+</span></span>
+<span id="cb43-7"><a href="#cb43-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_text</span>(<span class="fu">aes</span>(<span class="at">label =</span> r), <span class="at">size =</span> <span class="dv">3</span>) <span class="sc">+</span></span>
+<span id="cb43-8"><a href="#cb43-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_fill_gradient2</span>(<span class="at">limits =</span> <span class="fu">c</span>(<span class="sc">-</span><span class="dv">1</span>, <span class="dv">1</span>)) <span class="sc">+</span></span>
+<span id="cb43-9"><a href="#cb43-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="cn">NULL</span>, <span class="at">y =</span> <span class="cn">NULL</span>, <span class="at">fill =</span> <span class="st">"r"</span>) <span class="sc">+</span></span>
+<span id="cb43-10"><a href="#cb43-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">axis.text.x =</span> <span class="fu">element_text</span>(<span class="at">angle =</span> <span class="dv">45</span>, <span class="at">hjust =</span> <span class="dv">1</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
@@ -641,13 +976,13 @@ platfrom_m_per_km               -0.09   NaN   NaN</code></pre>
 </figure>
 </div>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="co"># create a table from the matrix and sort by absolute value of correlation</span></span>
-<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>cor_matrix <span class="sc">%&gt;%</span></span>
-<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">as.table</span>() <span class="sc">%&gt;%</span></span>
-<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">as.data.frame</span>() <span class="sc">%&gt;%</span></span>
-<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="fu">as.character</span>(Var1) <span class="sc">&lt;</span> <span class="fu">as.character</span>(Var2)) <span class="sc">%&gt;%</span></span>
-<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rename</span>(<span class="at">cor =</span> Freq) <span class="sc">%&gt;%</span></span>
-<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(<span class="fu">desc</span>(<span class="fu">abs</span>(cor)))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb44"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb44-1"><a href="#cb44-1" aria-hidden="true" tabindex="-1"></a><span class="co"># create a table from the matrix and sort by absolute value of correlation</span></span>
+<span id="cb44-2"><a href="#cb44-2" aria-hidden="true" tabindex="-1"></a>cor_matrix <span class="sc">%&gt;%</span></span>
+<span id="cb44-3"><a href="#cb44-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">as.table</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb44-4"><a href="#cb44-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">as.data.frame</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb44-5"><a href="#cb44-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="fu">as.character</span>(Var1) <span class="sc">&lt;</span> <span class="fu">as.character</span>(Var2)) <span class="sc">%&gt;%</span></span>
+<span id="cb44-6"><a href="#cb44-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rename</span>(<span class="at">cor =</span> Freq) <span class="sc">%&gt;%</span></span>
+<span id="cb44-7"><a href="#cb44-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(<span class="fu">desc</span>(<span class="fu">abs</span>(cor)))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>                               Var1                            Var2
 1                regulatory_quality                     rule_of_law
@@ -656,16 +991,16 @@ platfrom_m_per_km               -0.09   NaN   NaN</code></pre>
 4             control_of_corruption                     rule_of_law
 5   gdp_per_capita_constant_2015_us                  wage_per_month
 6                       rule_of_law        voice_and_accountability
-7               political_stability                     rule_of_law
-8   gdp_per_capita_constant_2015_us                     rule_of_law
-9          government_effectiveness                     rule_of_law
+7          government_effectiveness                     rule_of_law
+8               political_stability                     rule_of_law
+9   gdp_per_capita_constant_2015_us                     rule_of_law
 10         government_effectiveness              regulatory_quality
 11            control_of_corruption gdp_per_capita_constant_2015_us
 12  gdp_per_capita_constant_2015_us              regulatory_quality
 13            control_of_corruption             political_stability
 14              political_stability              regulatory_quality
-15         government_effectiveness             political_stability
-16               regulatory_quality                  wage_per_month
+15               regulatory_quality                  wage_per_month
+16         government_effectiveness             political_stability
 17            control_of_corruption                  wage_per_month
 18               regulatory_quality        voice_and_accountability
 19  gdp_per_capita_constant_2015_us        government_effectiveness
@@ -675,329 +1010,329 @@ platfrom_m_per_km               -0.09   NaN   NaN</code></pre>
 23  gdp_per_capita_constant_2015_us        voice_and_accountability
 24            control_of_corruption        voice_and_accountability
 25              political_stability        voice_and_accountability
-26         government_effectiveness        voice_and_accountability
-27         voice_and_accountability                  wage_per_month
-28              political_stability                  wage_per_month
-29                     elevated_per                      tunnel_per
-30             diesel_usd_per_liter        voice_and_accountability
-31               regulatory_quality            trade_percent_of_gdp
-32             diesel_usd_per_liter              regulatory_quality
-33             diesel_usd_per_liter                     rule_of_law
-34            control_of_corruption            diesel_usd_per_liter
-35             diesel_usd_per_liter             political_stability
+26                platfrom_m_per_km                 stations_per_km
+27         government_effectiveness        voice_and_accountability
+28         voice_and_accountability                  wage_per_month
+29              political_stability                  wage_per_month
+30                     elevated_per                      tunnel_per
+31             diesel_usd_per_liter        voice_and_accountability
+32               regulatory_quality            trade_percent_of_gdp
+33             diesel_usd_per_liter              regulatory_quality
+34             diesel_usd_per_liter                     rule_of_law
+35            control_of_corruption            diesel_usd_per_liter
 36             cost_km_2025_dollars               platfrom_m_per_km
-37             diesel_usd_per_liter        government_effectiveness
-38             cost_km_2025_dollars                  wage_per_month
-39                      rule_of_law            trade_percent_of_gdp
-40                      atgrade_per                      tunnel_per
-41            control_of_corruption            trade_percent_of_gdp
-42              political_stability            trade_percent_of_gdp
-43             diesel_usd_per_liter gdp_per_capita_constant_2015_us
-44             trade_percent_of_gdp        voice_and_accountability
+37             diesel_usd_per_liter             political_stability
+38             diesel_usd_per_liter        government_effectiveness
+39             cost_km_2025_dollars                  wage_per_month
+40                      rule_of_law            trade_percent_of_gdp
+41                      atgrade_per                      tunnel_per
+42            control_of_corruption            trade_percent_of_gdp
+43              political_stability            trade_percent_of_gdp
+44                  stations_per_km        voice_and_accountability
 45                platfrom_m_per_km                      tunnel_per
-46  gdp_per_capita_constant_2015_us            trade_percent_of_gdp
-47                           length        voice_and_accountability
-48                           length                  wage_per_month
-49             cost_km_2025_dollars gdp_per_capita_constant_2015_us
-50         government_effectiveness            trade_percent_of_gdp
-51            control_of_corruption                              rr
-52              political_stability                              rr
-53         government_effectiveness                              rr
-54                               rr                     rule_of_law
-55  gdp_per_capita_constant_2015_us                          length
-56               regulatory_quality                              rr
-57                           length                     rule_of_law
-58                      atgrade_per                     rule_of_law
-59                      atgrade_per           control_of_corruption
-60             cost_km_2025_dollars            trade_percent_of_gdp
-61                      atgrade_per              regulatory_quality
-62                       tunnel_per                  wage_per_month
-63                      atgrade_per        voice_and_accountability
-64                      atgrade_per             political_stability
-65                      atgrade_per        government_effectiveness
-66  gdp_per_capita_constant_2015_us                              rr
-67                      atgrade_per gdp_per_capita_constant_2015_us
-68                  stations_per_km                  wage_per_month
-69                           length             political_stability
-70                      atgrade_per                  wage_per_month
-71                           length              regulatory_quality
-72                           length                      tunnel_per
-73             diesel_usd_per_liter                          length
-74             cost_km_2025_dollars              regulatory_quality
-75            control_of_corruption                          length
-76             cost_km_2025_dollars                     rule_of_law
-77             diesel_usd_per_liter            trade_percent_of_gdp
-78            control_of_corruption            cost_km_2025_dollars
-79             diesel_usd_per_liter                      tunnel_per
-80               regulatory_quality                            year
-81                               rr        voice_and_accountability
-82         voice_and_accountability                            year
-83             cost_km_2025_dollars        voice_and_accountability
-84                               rr                  wage_per_month
-85         government_effectiveness                          length
-86             trade_percent_of_gdp                  wage_per_month
-87             cost_km_2025_dollars                      tunnel_per
-88                      rule_of_law                            year
-89             trade_percent_of_gdp                            year
-90             cost_km_2025_dollars        government_effectiveness
-91                     elevated_per                  wage_per_month
-92             cost_km_2025_dollars                          length
-93                  stations_per_km                      tunnel_per
-94             diesel_usd_per_liter                    elevated_per
-95                     elevated_per gdp_per_capita_constant_2015_us
-96             cost_km_2025_dollars                              rr
-97                     elevated_per                            year
-98             cost_km_2025_dollars             political_stability
-99             cost_km_2025_dollars                    elevated_per
-100           control_of_corruption                    elevated_per
-101            diesel_usd_per_liter                            year
-102                  wage_per_month                            year
-103        government_effectiveness                            year
-104             political_stability                            year
-105                     atgrade_per               platfrom_m_per_km
-106                              rr                            year
-107                          length                              rr
-108                      tunnel_per        voice_and_accountability
-109                    elevated_per        voice_and_accountability
-110                          length            trade_percent_of_gdp
-111                      tunnel_per                            year
-112                     atgrade_per                    elevated_per
-113                    elevated_per                     rule_of_law
-114                    elevated_per              regulatory_quality
-115                     atgrade_per            cost_km_2025_dollars
-116                     atgrade_per                              rr
-117             political_stability                      tunnel_per
-118            cost_km_2025_dollars                 stations_per_km
-119                    elevated_per        government_effectiveness
-120                     atgrade_per                          length
-121                          length                            year
-122                              rr            trade_percent_of_gdp
-123            cost_km_2025_dollars            diesel_usd_per_liter
-124               platfrom_m_per_km                  wage_per_month
-125                    elevated_per             political_stability
-126            diesel_usd_per_liter                              rr
-127                    elevated_per                          length
-128                     rule_of_law                      tunnel_per
-129            trade_percent_of_gdp                      tunnel_per
-130                    elevated_per                              rr
-131                              rr                      tunnel_per
-132                     atgrade_per            trade_percent_of_gdp
-133           control_of_corruption                            year
-134                    elevated_per                 stations_per_km
-135 gdp_per_capita_constant_2015_us                            year
-136            cost_km_2025_dollars                            year
-137                    elevated_per               platfrom_m_per_km
-138                     atgrade_per                 stations_per_km
-139              regulatory_quality                      tunnel_per
-140                    elevated_per            trade_percent_of_gdp
-141                     atgrade_per                            year
-142 gdp_per_capita_constant_2015_us                      tunnel_per
-143           control_of_corruption                      tunnel_per
-144            diesel_usd_per_liter                  wage_per_month
-145        government_effectiveness                      tunnel_per
-146                     atgrade_per            diesel_usd_per_liter
-147               platfrom_m_per_km                              rr
-148                 stations_per_km                            year
-149               platfrom_m_per_km                            year
-150               platfrom_m_per_km             political_stability
-151               platfrom_m_per_km              regulatory_quality
-152               platfrom_m_per_km                     rule_of_law
-153                 stations_per_km        voice_and_accountability
-154               platfrom_m_per_km        voice_and_accountability
-155                 stations_per_km            trade_percent_of_gdp
-156               platfrom_m_per_km            trade_percent_of_gdp
-157                              rr                 stations_per_km
-158                          length                 stations_per_km
-159        government_effectiveness                 stations_per_km
-160           control_of_corruption                 stations_per_km
-161             political_stability                 stations_per_km
-162              regulatory_quality                 stations_per_km
-163                     rule_of_law                 stations_per_km
-164 gdp_per_capita_constant_2015_us                 stations_per_km
-165            diesel_usd_per_liter                 stations_per_km
-166               platfrom_m_per_km                 stations_per_km
-167                          length               platfrom_m_per_km
-168        government_effectiveness               platfrom_m_per_km
-169           control_of_corruption               platfrom_m_per_km
-170 gdp_per_capita_constant_2015_us               platfrom_m_per_km
-171            diesel_usd_per_liter               platfrom_m_per_km
+46             diesel_usd_per_liter gdp_per_capita_constant_2015_us
+47                           length               platfrom_m_per_km
+48             trade_percent_of_gdp        voice_and_accountability
+49                           length        voice_and_accountability
+50  gdp_per_capita_constant_2015_us            trade_percent_of_gdp
+51                           length                  wage_per_month
+52                               rr                 stations_per_km
+53                      rule_of_law                 stations_per_km
+54             cost_km_2025_dollars gdp_per_capita_constant_2015_us
+55              political_stability                              rr
+56            control_of_corruption                              rr
+57         government_effectiveness                              rr
+58         government_effectiveness            trade_percent_of_gdp
+59                           length                 stations_per_km
+60                               rr                     rule_of_law
+61               regulatory_quality                              rr
+62  gdp_per_capita_constant_2015_us                          length
+63                           length                     rule_of_law
+64                  stations_per_km                  wage_per_month
+65                      atgrade_per                     rule_of_law
+66                      atgrade_per           control_of_corruption
+67             cost_km_2025_dollars            trade_percent_of_gdp
+68                platfrom_m_per_km        voice_and_accountability
+69               regulatory_quality                 stations_per_km
+70                      atgrade_per              regulatory_quality
+71                       tunnel_per                  wage_per_month
+72                platfrom_m_per_km                            year
+73                      atgrade_per             political_stability
+74                      atgrade_per        voice_and_accountability
+75  gdp_per_capita_constant_2015_us                              rr
+76                      atgrade_per        government_effectiveness
+77              political_stability                 stations_per_km
+78                      atgrade_per gdp_per_capita_constant_2015_us
+79                           length             political_stability
+80                platfrom_m_per_km                     rule_of_law
+81                           length              regulatory_quality
+82                      atgrade_per                  wage_per_month
+83                platfrom_m_per_km              regulatory_quality
+84             diesel_usd_per_liter                 stations_per_km
+85             diesel_usd_per_liter                          length
+86             cost_km_2025_dollars              regulatory_quality
+87            control_of_corruption                          length
+88                platfrom_m_per_km             political_stability
+89             cost_km_2025_dollars                     rule_of_law
+90             diesel_usd_per_liter            trade_percent_of_gdp
+91                           length                      tunnel_per
+92             diesel_usd_per_liter                      tunnel_per
+93            control_of_corruption            cost_km_2025_dollars
+94               regulatory_quality                            year
+95            control_of_corruption                 stations_per_km
+96                               rr                  wage_per_month
+97         voice_and_accountability                            year
+98                               rr        voice_and_accountability
+99             cost_km_2025_dollars        voice_and_accountability
+100 gdp_per_capita_constant_2015_us               platfrom_m_per_km
+101            trade_percent_of_gdp                  wage_per_month
+102                 stations_per_km                            year
+103 gdp_per_capita_constant_2015_us                 stations_per_km
+104        government_effectiveness                          length
+105            cost_km_2025_dollars                      tunnel_per
+106        government_effectiveness               platfrom_m_per_km
+107        government_effectiveness                 stations_per_km
+108           control_of_corruption               platfrom_m_per_km
+109                     rule_of_law                            year
+110            trade_percent_of_gdp                            year
+111            cost_km_2025_dollars        government_effectiveness
+112                    elevated_per                  wage_per_month
+113            cost_km_2025_dollars                          length
+114            diesel_usd_per_liter                    elevated_per
+115                    elevated_per gdp_per_capita_constant_2015_us
+116                    elevated_per                            year
+117            cost_km_2025_dollars                              rr
+118            diesel_usd_per_liter                            year
+119           control_of_corruption                    elevated_per
+120            cost_km_2025_dollars             political_stability
+121            cost_km_2025_dollars                    elevated_per
+122                  wage_per_month                            year
+123               platfrom_m_per_km                              rr
+124        government_effectiveness                            year
+125                 stations_per_km                      tunnel_per
+126               platfrom_m_per_km            trade_percent_of_gdp
+127                     atgrade_per                    elevated_per
+128             political_stability                            year
+129                              rr                            year
+130                      tunnel_per                            year
+131                     atgrade_per               platfrom_m_per_km
+132                      tunnel_per        voice_and_accountability
+133                    elevated_per        voice_and_accountability
+134                    elevated_per              regulatory_quality
+135                    elevated_per                     rule_of_law
+136                          length            trade_percent_of_gdp
+137             political_stability                      tunnel_per
+138                     atgrade_per            cost_km_2025_dollars
+139                    elevated_per        government_effectiveness
+140                 stations_per_km            trade_percent_of_gdp
+141            cost_km_2025_dollars                 stations_per_km
+142                              rr            trade_percent_of_gdp
+143                          length                            year
+144            cost_km_2025_dollars            diesel_usd_per_liter
+145                    elevated_per             political_stability
+146               platfrom_m_per_km                  wage_per_month
+147            diesel_usd_per_liter                              rr
+148                     atgrade_per                 stations_per_km
+149            diesel_usd_per_liter               platfrom_m_per_km
+150                    elevated_per            trade_percent_of_gdp
+151                    elevated_per               platfrom_m_per_km
+152                    elevated_per                              rr
+153                     rule_of_law                      tunnel_per
+154                     atgrade_per            trade_percent_of_gdp
+155 gdp_per_capita_constant_2015_us                            year
+156            trade_percent_of_gdp                      tunnel_per
+157           control_of_corruption                            year
+158                          length                              rr
+159                     atgrade_per                          length
+160                     atgrade_per                              rr
+161                    elevated_per                          length
+162            cost_km_2025_dollars                            year
+163                     atgrade_per                            year
+164            diesel_usd_per_liter                  wage_per_month
+165              regulatory_quality                      tunnel_per
+166 gdp_per_capita_constant_2015_us                      tunnel_per
+167           control_of_corruption                      tunnel_per
+168                    elevated_per                 stations_per_km
+169                              rr                      tunnel_per
+170                     atgrade_per            diesel_usd_per_liter
+171        government_effectiveness                      tunnel_per
              cor
-1    0.958657975
-2    0.946283482
-3    0.944388951
-4    0.933135419
-5    0.931990584
-6    0.906339258
-7    0.878871609
-8    0.878552479
-9    0.878492996
-10   0.877445483
-11   0.875387874
-12   0.870131395
-13   0.866437242
-14   0.863880405
-15   0.854384742
-16   0.847570753
-17   0.824815648
-18   0.823094423
-19   0.799396647
-20   0.789214687
-21   0.781865127
-22   0.781195324
-23   0.766839076
-24   0.743986599
-25   0.717728548
-26   0.669333312
-27   0.618509250
-28   0.594125337
-29  -0.511438948
-30   0.472057033
-31   0.460074142
-32   0.438984216
-33   0.432801267
-34   0.412312170
-35   0.403773378
+1    0.958803892
+2    0.946393292
+3    0.943819303
+4    0.933033748
+5    0.931869751
+6    0.907147297
+7    0.878683151
+8    0.878577621
+9    0.878294265
+10   0.877608188
+11   0.875890115
+12   0.871041859
+13   0.865249309
+14   0.861903649
+15   0.855757603
+16   0.853282636
+17   0.825620714
+18   0.824183141
+19   0.799254552
+20   0.788153214
+21   0.785371893
+22   0.782753620
+23   0.765371317
+24   0.744561245
+25   0.717218467
+26   0.670864480
+27   0.670105064
+28   0.625216703
+29   0.590605979
+30  -0.492328763
+31   0.475794519
+32   0.454820765
+33   0.436852398
+34   0.433128840
+35   0.408606270
 36   0.399662590
-37   0.395737933
-38   0.388883846
-39   0.380939605
-40  -0.356727402
-41   0.351546312
-42   0.346353355
-43   0.335213676
-44   0.323727538
-45   0.322323331
-46   0.307577801
-47  -0.307425356
-48  -0.289391165
-49   0.273626701
-50   0.262795473
-51   0.261393206
-52   0.261010599
-53   0.255486247
-54   0.244710286
-55  -0.241521368
-56   0.238896008
-57  -0.238165189
-58   0.237125553
-59   0.236775396
-60   0.236147598
-61   0.231572828
-62   0.227135371
-63   0.225471151
-64   0.225293197
-65   0.222770303
-66   0.222509141
-67   0.221191559
-68  -0.219868192
-69  -0.215293795
-70   0.214338010
-71  -0.214073363
-72  -0.207838295
-73  -0.197999278
-74   0.196771889
-75  -0.194511859
-76   0.188505373
-77   0.184985567
-78   0.180975694
-79   0.180767458
-80  -0.179075356
-81   0.171617241
-82  -0.171170894
-83   0.171019246
-84   0.158542587
-85  -0.153378165
-86  -0.150139828
-87   0.148742830
-88  -0.140157346
-89  -0.132925669
-90   0.131237080
-91  -0.130612034
-92  -0.124579743
-93   0.122830691
-94  -0.122388674
-95  -0.118909361
-96   0.117457643
-97  -0.113279165
-98   0.112962366
-99  -0.110847045
-100 -0.110586204
-101  0.110342792
-102  0.109800171
-103  0.109634099
-104 -0.095779302
-105 -0.092594995
-106 -0.088029642
-107  0.087832123
-108 -0.087208053
-109 -0.085299779
-110 -0.082627262
-111  0.082451091
-112  0.081738107
-113 -0.079421377
-114 -0.076953559
-115 -0.074575470
-116  0.073421928
-117  0.071373251
-118  0.069908937
-119 -0.069886283
-120  0.068840513
-121  0.068045042
-122  0.065450583
-123 -0.062137301
-124 -0.061807593
-125 -0.055989459
-126  0.055091447
-127  0.054177756
-128 -0.053735651
-129 -0.053421290
-130 -0.049551075
-131 -0.048322983
-132  0.042442664
-133 -0.038707391
-134 -0.037035736
-135 -0.035028421
-136 -0.032438493
-137 -0.030175945
-138  0.029263320
-139 -0.026321709
-140 -0.025162082
-141 -0.023918363
-142  0.020712930
-143  0.016858893
-144  0.013349135
-145  0.004730471
-146 -0.004136367
-147          NaN
-148          NaN
-149          NaN
-150          NaN
-151          NaN
-152          NaN
-153          NaN
-154          NaN
-155          NaN
-156          NaN
-157          NaN
-158          NaN
-159          NaN
-160          NaN
-161          NaN
-162          NaN
-163          NaN
-164          NaN
-165          NaN
-166          NaN
-167          NaN
-168          NaN
-169          NaN
-170          NaN
-171          NaN</code></pre>
+37   0.397916546
+38   0.389838583
+39   0.388883846
+40   0.377798440
+41  -0.347942708
+42   0.347171426
+43   0.339572187
+44   0.337924771
+45   0.333791348
+46   0.332057536
+47  -0.327064271
+48   0.322476585
+49  -0.309810443
+50   0.305912197
+51  -0.293539323
+52  -0.284092932
+53   0.273915324
+54   0.273626701
+55   0.266966640
+56   0.266334324
+57   0.259994971
+58   0.259498789
+59  -0.255852152
+60   0.247457122
+61   0.243872811
+62  -0.243381567
+63  -0.242129838
+64  -0.239565071
+65   0.237110689
+66   0.237034368
+67   0.236147598
+68   0.234736587
+69   0.234193395
+70   0.232146039
+71   0.229326207
+72  -0.228257704
+73   0.226001580
+74   0.224896530
+75   0.224397210
+76   0.223127714
+77   0.220565984
+78   0.219627696
+79  -0.215415858
+80   0.215374783
+81  -0.215005897
+82   0.212434669
+83   0.202957184
+84   0.199440503
+85  -0.196946802
+86   0.196771889
+87  -0.196387840
+88   0.196075416
+89   0.188505373
+90   0.188086537
+91  -0.184133235
+92   0.181467572
+93   0.180975694
+94  -0.178768405
+95   0.176666956
+96   0.175915984
+97  -0.173733060
+98   0.173469855
+99   0.171019246
+100  0.166873780
+101 -0.165670870
+102 -0.164425061
+103  0.158930714
+104 -0.156366976
+105  0.148742830
+106  0.146414744
+107  0.145940452
+108  0.143960216
+109 -0.142454383
+110 -0.135385155
+111  0.131237080
+112 -0.127914690
+113 -0.124579743
+114 -0.123710751
+115 -0.122489896
+116 -0.121045002
+117  0.117457643
+118  0.116217538
+119 -0.115965828
+120  0.112962366
+121 -0.110847045
+122  0.109466996
+123 -0.108292017
+124  0.106373763
+125  0.103148040
+126  0.100364348
+127  0.097965654
+128 -0.097165119
+129 -0.096366111
+130  0.090092817
+131 -0.087932049
+132 -0.086979618
+133 -0.085370896
+134 -0.084459490
+135 -0.084160340
+136 -0.078803707
+137  0.074854367
+138 -0.074575470
+139 -0.072308822
+140  0.070861279
+141  0.069908937
+142  0.068643843
+143  0.065640468
+144 -0.062137301
+145 -0.062033861
+146 -0.061807593
+147  0.060224278
+148  0.057315904
+149  0.057005256
+150 -0.054498058
+151 -0.054031779
+152 -0.052425576
+153 -0.052053952
+154  0.043550812
+155 -0.043451893
+156 -0.041817620
+157 -0.041123923
+158  0.039766227
+159 -0.037840668
+160  0.037696348
+161  0.036075725
+162 -0.032438493
+163 -0.027953790
+164 -0.027016158
+165 -0.024284498
+166  0.022982767
+167  0.018267789
+168 -0.012473719
+169 -0.011873898
+170 -0.007398205
+171  0.005584654</code></pre>
 </div>
 </div>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(transit_data_1, <span class="fu">aes</span>(<span class="at">x =</span> year)) <span class="sc">+</span></span>
-<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_histogram</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb46"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb46-1"><a href="#cb46-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(transit_data_1, <span class="fu">aes</span>(<span class="at">x =</span> year)) <span class="sc">+</span></span>
+<span id="cb46-2"><a href="#cb46-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_histogram</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>`stat_bin()` using `bins = 30`. Pick better value `binwidth`.</code></pre>
 </div>
@@ -1012,18 +1347,18 @@ platfrom_m_per_km               -0.09   NaN   NaN</code></pre>
 </figure>
 </div>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="co"># ggplot(wage_data_1, aes(x = year)) +</span></span>
-<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a><span class="co">#   geom_histogram()</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb49"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb49-1"><a href="#cb49-1" aria-hidden="true" tabindex="-1"></a><span class="co"># ggplot(wage_data_1, aes(x = year)) +</span></span>
+<span id="cb49-2"><a href="#cb49-2" aria-hidden="true" tabindex="-1"></a><span class="co">#   geom_histogram()</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="co"># NAs per variable</span></span>
-<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a>joined_2_trim <span class="sc">%&gt;%</span></span>
-<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">is.na</span>() <span class="sc">%&gt;%</span></span>
-<span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">colSums</span>() <span class="sc">%&gt;%</span></span>
-<span id="cb25-5"><a href="#cb25-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">enframe</span>(<span class="at">name =</span> <span class="st">"variable"</span>, <span class="at">value =</span> <span class="st">"n_na"</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb25-6"><a href="#cb25-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> n_na, <span class="at">y =</span> <span class="fu">reorder</span>(variable, n_na))) <span class="sc">+</span></span>
-<span id="cb25-7"><a href="#cb25-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_col</span>() <span class="sc">+</span></span>
-<span id="cb25-8"><a href="#cb25-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Number of NAs"</span>, <span class="at">y =</span> <span class="cn">NULL</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb50"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb50-1"><a href="#cb50-1" aria-hidden="true" tabindex="-1"></a><span class="co"># NAs per variable</span></span>
+<span id="cb50-2"><a href="#cb50-2" aria-hidden="true" tabindex="-1"></a>joined_2_trim <span class="sc">%&gt;%</span></span>
+<span id="cb50-3"><a href="#cb50-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">is.na</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb50-4"><a href="#cb50-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">colSums</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb50-5"><a href="#cb50-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">enframe</span>(<span class="at">name =</span> <span class="st">"variable"</span>, <span class="at">value =</span> <span class="st">"n_na"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb50-6"><a href="#cb50-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> n_na, <span class="at">y =</span> <span class="fu">reorder</span>(variable, n_na))) <span class="sc">+</span></span>
+<span id="cb50-7"><a href="#cb50-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_col</span>() <span class="sc">+</span></span>
+<span id="cb50-8"><a href="#cb50-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Number of NAs"</span>, <span class="at">y =</span> <span class="cn">NULL</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
@@ -1031,31 +1366,31 @@ platfrom_m_per_km               -0.09   NaN   NaN</code></pre>
 </figure>
 </div>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a>joined_2_trim <span class="sc">%&gt;%</span></span>
-<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">nrow</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb51"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb51-1"><a href="#cb51-1" aria-hidden="true" tabindex="-1"></a>joined_2_trim <span class="sc">%&gt;%</span></span>
+<span id="cb51-2"><a href="#cb51-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">nrow</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>[1] 1214</code></pre>
+<pre><code>[1] 1155</code></pre>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb28"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a>joined_2_trim <span class="sc">%&gt;%</span></span>
-<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="fu">if_any</span>(<span class="sc">-</span><span class="fu">c</span>(platfrom_m_per_km, atgrade_per, elevated_per, id), is.na)) <span class="sc">%&gt;%</span></span>
-<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">nrow</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb53"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb53-1"><a href="#cb53-1" aria-hidden="true" tabindex="-1"></a>joined_2_trim <span class="sc">%&gt;%</span></span>
+<span id="cb53-2"><a href="#cb53-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="fu">if_any</span>(<span class="sc">-</span><span class="fu">c</span>(platfrom_m_per_km, atgrade_per, elevated_per), is.na)) <span class="sc">%&gt;%</span></span>
+<span id="cb53-3"><a href="#cb53-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">nrow</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>[1] 1080</code></pre>
+<pre><code>[1] 1021</code></pre>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb30"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a>joined_2_trim <span class="sc">%&gt;%</span></span>
-<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="fu">if_all</span>(</span>
-<span id="cb30-3"><a href="#cb30-3" aria-hidden="true" tabindex="-1"></a>    <span class="sc">-</span><span class="fu">c</span>(platfrom_m_per_km, atgrade_per, elevated_per, id), \(col) <span class="sc">!</span><span class="fu">is.na</span>(col))) <span class="sc">%&gt;%</span></span>
-<span id="cb30-4"><a href="#cb30-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">nrow</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb55"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb55-1"><a href="#cb55-1" aria-hidden="true" tabindex="-1"></a>joined_2_trim <span class="sc">%&gt;%</span></span>
+<span id="cb55-2"><a href="#cb55-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="fu">if_all</span>(</span>
+<span id="cb55-3"><a href="#cb55-3" aria-hidden="true" tabindex="-1"></a>    <span class="sc">-</span><span class="fu">c</span>(platfrom_m_per_km, atgrade_per, elevated_per), \(col) <span class="sc">!</span><span class="fu">is.na</span>(col))) <span class="sc">%&gt;%</span></span>
+<span id="cb55-4"><a href="#cb55-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">nrow</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>[1] 134</code></pre>
 </div>
 </div>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb32"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Distribution barchart of legal_systems_2</span></span>
-<span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a>joined_2 <span class="sc">%&gt;%</span></span>
-<span id="cb32-3"><a href="#cb32-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">y =</span> <span class="fu">fct_infreq</span>(legal_systems_2))) <span class="sc">+</span></span>
-<span id="cb32-4"><a href="#cb32-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_bar</span>() <span class="sc">+</span></span>
-<span id="cb32-5"><a href="#cb32-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Count"</span>, <span class="at">y =</span> <span class="cn">NULL</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb57"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb57-1"><a href="#cb57-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Distribution barchart of legal_systems_2</span></span>
+<span id="cb57-2"><a href="#cb57-2" aria-hidden="true" tabindex="-1"></a>joined_2 <span class="sc">%&gt;%</span></span>
+<span id="cb57-3"><a href="#cb57-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">y =</span> <span class="fu">fct_infreq</span>(legal_systems_2))) <span class="sc">+</span></span>
+<span id="cb57-4"><a href="#cb57-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_bar</span>() <span class="sc">+</span></span>
+<span id="cb57-5"><a href="#cb57-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Count"</span>, <span class="at">y =</span> <span class="cn">NULL</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
@@ -1063,12 +1398,12 @@ platfrom_m_per_km               -0.09   NaN   NaN</code></pre>
 </figure>
 </div>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb33"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Distribution of countries, grouped by legal_systems_2</span></span>
-<span id="cb33-2"><a href="#cb33-2" aria-hidden="true" tabindex="-1"></a>joined_2 <span class="sc">%&gt;%</span></span>
-<span id="cb33-3"><a href="#cb33-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">y =</span> legal_systems_2, <span class="at">fill =</span> iso3c)) <span class="sc">+</span></span>
-<span id="cb33-4"><a href="#cb33-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_bar</span>(<span class="at">position =</span> <span class="st">"fill"</span>) <span class="sc">+</span></span>
-<span id="cb33-5"><a href="#cb33-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Proportion"</span>, <span class="at">y =</span> <span class="cn">NULL</span>, <span class="at">fill =</span> <span class="cn">NULL</span>) <span class="sc">+</span></span>
-<span id="cb33-6"><a href="#cb33-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">guides</span>(<span class="at">fill =</span> <span class="fu">guide_legend</span>(<span class="at">ncol =</span> <span class="dv">4</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb58"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb58-1"><a href="#cb58-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Distribution of countries, grouped by legal_systems_2</span></span>
+<span id="cb58-2"><a href="#cb58-2" aria-hidden="true" tabindex="-1"></a>joined_2 <span class="sc">%&gt;%</span></span>
+<span id="cb58-3"><a href="#cb58-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">y =</span> legal_systems_2, <span class="at">fill =</span> iso3c)) <span class="sc">+</span></span>
+<span id="cb58-4"><a href="#cb58-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_bar</span>(<span class="at">position =</span> <span class="st">"fill"</span>) <span class="sc">+</span></span>
+<span id="cb58-5"><a href="#cb58-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Proportion"</span>, <span class="at">y =</span> <span class="cn">NULL</span>, <span class="at">fill =</span> <span class="cn">NULL</span>) <span class="sc">+</span></span>
+<span id="cb58-6"><a href="#cb58-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">guides</span>(<span class="at">fill =</span> <span class="fu">guide_legend</span>(<span class="at">ncol =</span> <span class="dv">4</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
@@ -1076,12 +1411,12 @@ platfrom_m_per_km               -0.09   NaN   NaN</code></pre>
 </figure>
 </div>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb34"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a>joined_2 <span class="sc">%&gt;%</span></span>
-<span id="cb34-2"><a href="#cb34-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">y =</span> iso3c)) <span class="sc">+</span></span>
-<span id="cb34-3"><a href="#cb34-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_bar</span>() <span class="sc">+</span></span>
-<span id="cb34-4"><a href="#cb34-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">facet_wrap</span>(<span class="sc">~</span> legal_systems_2, <span class="at">scales =</span> <span class="st">"free_y"</span>, <span class="at">ncol =</span> <span class="dv">4</span>) <span class="sc">+</span></span>
-<span id="cb34-5"><a href="#cb34-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Count"</span>, <span class="at">y =</span> <span class="cn">NULL</span>) <span class="sc">+</span></span>
-<span id="cb34-6"><a href="#cb34-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">text =</span> <span class="fu">element_text</span>(<span class="at">size =</span> <span class="dv">7</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb59"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb59-1"><a href="#cb59-1" aria-hidden="true" tabindex="-1"></a>joined_2 <span class="sc">%&gt;%</span></span>
+<span id="cb59-2"><a href="#cb59-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">y =</span> iso3c)) <span class="sc">+</span></span>
+<span id="cb59-3"><a href="#cb59-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_bar</span>() <span class="sc">+</span></span>
+<span id="cb59-4"><a href="#cb59-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">facet_wrap</span>(<span class="sc">~</span> legal_systems_2, <span class="at">scales =</span> <span class="st">"free_y"</span>, <span class="at">ncol =</span> <span class="dv">4</span>) <span class="sc">+</span></span>
+<span id="cb59-5"><a href="#cb59-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Count"</span>, <span class="at">y =</span> <span class="cn">NULL</span>) <span class="sc">+</span></span>
+<span id="cb59-6"><a href="#cb59-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">text =</span> <span class="fu">element_text</span>(<span class="at">size =</span> <span class="dv">7</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
@@ -1089,12 +1424,12 @@ platfrom_m_per_km               -0.09   NaN   NaN</code></pre>
 </figure>
 </div>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb35"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a>joined_2 <span class="sc">%&gt;%</span></span>
-<span id="cb35-2"><a href="#cb35-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> <span class="st">""</span>, <span class="at">fill =</span> iso3c)) <span class="sc">+</span></span>
-<span id="cb35-3"><a href="#cb35-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_bar</span>(<span class="at">width =</span> <span class="dv">1</span>) <span class="sc">+</span></span>
-<span id="cb35-4"><a href="#cb35-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">coord_polar</span>(<span class="at">theta =</span> <span class="st">"y"</span>) <span class="sc">+</span></span>
-<span id="cb35-5"><a href="#cb35-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">fill =</span> <span class="cn">NULL</span>) <span class="sc">+</span></span>
-<span id="cb35-6"><a href="#cb35-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_void</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb60"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb60-1"><a href="#cb60-1" aria-hidden="true" tabindex="-1"></a>joined_2 <span class="sc">%&gt;%</span></span>
+<span id="cb60-2"><a href="#cb60-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> <span class="st">""</span>, <span class="at">fill =</span> iso3c)) <span class="sc">+</span></span>
+<span id="cb60-3"><a href="#cb60-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_bar</span>(<span class="at">width =</span> <span class="dv">1</span>) <span class="sc">+</span></span>
+<span id="cb60-4"><a href="#cb60-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">coord_polar</span>(<span class="at">theta =</span> <span class="st">"y"</span>) <span class="sc">+</span></span>
+<span id="cb60-5"><a href="#cb60-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">fill =</span> <span class="cn">NULL</span>) <span class="sc">+</span></span>
+<span id="cb60-6"><a href="#cb60-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_void</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
@@ -1104,17 +1439,33 @@ platfrom_m_per_km               -0.09   NaN   NaN</code></pre>
 </div>
 </div>
 </section>
-<section id="diagnosticsbug-finding-code-used" class="level1">
-<h1>Diagnostics/bug-finding code used</h1>
+<section id="graveyard" class="level1">
+<h1>Graveyard</h1>
+<section id="code-dump" class="level3">
+<h3 class="anchored" data-anchor-id="code-dump">Code Dump</h3>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb36"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a>diesel_b2016_data_1 <span class="sc">%&gt;%</span></span>
-<span id="cb36-2"><a href="#cb36-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">count</span>(iso3c, year) <span class="sc">%&gt;%</span></span>
-<span id="cb36-3"><a href="#cb36-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(n <span class="sc">&gt;</span> <span class="dv">1</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb61"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb61-1"><a href="#cb61-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(joined_2_trim, <span class="fu">aes</span>(<span class="at">x =</span> cost_km_2025_dollars)) <span class="sc">+</span></span>
+<span id="cb61-2"><a href="#cb61-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_boxplot</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="capstone_data_exploration_files/figure-html/unnamed-chunk-1-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="diagnosticsbug-finding-code-used" class="level3">
+<h3 class="anchored" data-anchor-id="diagnosticsbug-finding-code-used">Diagnostics/bug-finding code used</h3>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb62"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb62-1"><a href="#cb62-1" aria-hidden="true" tabindex="-1"></a>diesel_b2016_data_1 <span class="sc">%&gt;%</span></span>
+<span id="cb62-2"><a href="#cb62-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">count</span>(iso3c, year) <span class="sc">%&gt;%</span></span>
+<span id="cb62-3"><a href="#cb62-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(n <span class="sc">&gt;</span> <span class="dv">1</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code># A tibble: 0 × 3
 # ℹ 3 variables: iso3c &lt;chr&gt;, year &lt;dbl&gt;, n &lt;int&gt;</code></pre>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb38"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a>joined <span class="sc">%&gt;%</span> <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(diesel_usd_per_liter_a), <span class="sc">!</span><span class="fu">is.na</span>(diesel_usd_per_liter_b))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb64"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb64-1"><a href="#cb64-1" aria-hidden="true" tabindex="-1"></a>joined <span class="sc">%&gt;%</span> <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(diesel_usd_per_liter_a), <span class="sc">!</span><span class="fu">is.na</span>(diesel_usd_per_liter_b))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code> [1] id                              iso3c                          
  [3] city                            line                           
@@ -1133,6 +1484,7 @@ platfrom_m_per_km               -0.09   NaN   NaN</code></pre>
 &lt;0 rows&gt; (or 0-length row.names)</code></pre>
 </div>
 </div>
+</section>
 </section>
 
 </main>

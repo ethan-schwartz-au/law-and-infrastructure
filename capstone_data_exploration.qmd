@@ -1,28 +1,28 @@
 ---
 title: "Capstone Data Exploration"
 author: "Ethan Schwartz"
-format: html
+format: pdf
 ---
 
 To do:
 
-Make sure its same type of measurement as a2016 data (ex real/nominal, ppp, etc)
+- Make sure its same type of measurement as a2016 data (ex real/nominal, ppp, etc)
 
-**Join**
+- get steel data
 
-get steel data
+- clean
 
-clean
+- join
 
-join
+- get concrete/cement data
 
-get concrete/cement data
+- clean
 
-clean
+- join
 
-join
+- data explore
 
-do correlations with dummys(?)
+  - **remove outlier (usa), redo var relations explore**
 
 # Setup
 
@@ -302,6 +302,7 @@ diesel_b2016_data_1 <- diesel_b2016_data %>%
   rename_with(\(nm) sub("^x(\\d{4})_yr\\d{4}$", "\\1", nm),
               .cols = matches("^x\\d{4}_yr\\d{4}$"))
 
+#CHOICE#
 # pivot_longer by year, fills in missing year values by averaging nearest 1 or 2 value(s) of the country [there is usually a 1 year gap between observations]. Value is made NA if there aren't any values within 2 years
 diesel_b2016_data_1 <- diesel_b2016_data_1 %>%
   pivot_longer(`1960`:`2015`, names_to = "year", values_to = "diesel_usd_per_liter_b") %>%
@@ -374,8 +375,6 @@ joined <- joined %>%
   left_join(wage_data_1 %>% select(iso3c, year, wage_per_month),
             by = c("iso3c", "year"))
 
-
-
 # ADD relevent variables from diesel_a2016_data_1
 joined <- joined %>%
   left_join(diesel_a2016_data_1 %>% select(iso3c, year, diesel_usd_per_liter_a),
@@ -430,6 +429,8 @@ joined_1 <- joined_1 %>%
   # Convert to numeric
   mutate(across(government_effectiveness:trade_percent_of_gdp, as.numeric))
 
+#CHOICE#
+# note: split colonial past?
 # Correct legal systems for cit(y/ies) that differ from their greater nation
 joined_1 <- joined_1 %>%
   mutate(legal_systems = if_else(
@@ -447,9 +448,14 @@ joined_1 <- joined_1 %>%
     is.na(mixed_systems_components), NA,
     sapply(strsplit(mixed_systems_components, "/"), \(parts) paste(sort(parts), collapse = "/"))))
 
+# create 1 diesel price variale
 joined_1 <- joined_1 %>%
   mutate(diesel_usd_per_liter = coalesce(
     diesel_usd_per_liter_a, diesel_usd_per_liter_b))
+
+# remove opbservations without dependent var values
+joined_1 <- joined_1 %>%
+  filter(!is.na(cost_km_2025_dollars))
 ```
 
 ### Transform Variables
@@ -466,6 +472,7 @@ joined_2 <- joined_1 %>%
   # Make variables for stations/km and platform m/km
   mutate(stations_per_km = stations/length) %>%
   mutate(platfrom_m_per_km = stations_per_km*platform_length_meters) %>%
+  #CHOICE#
   # Make col_ruler_2 where uncolonized countries are marked as their own col origin
   mutate(col_ruler_2 = if_else(is.na(col_ruler_iso3c), iso3c, col_ruler_iso3c)) %>%
   # Make legal_systems_2, where 'Mixed' _> value of mixed_systems_components
@@ -475,7 +482,7 @@ joined_2 <- joined_1 %>%
 
 # Remove irrelevent variables
 joined_2_trim <- joined_2 %>%
-  select(-c(tunnel, elevated, atgrade, stations, platform_length_meters,
+  select(-c(id, tunnel, elevated, atgrade, stations, platform_length_meters,
             legal_systems, mixed_systems_components, col_ruler_iso3c,
             diesel_usd_per_liter_a, diesel_usd_per_liter_b))
 ```
@@ -486,7 +493,152 @@ joined_2_trim <- joined_2 %>%
 #| label: run-all-chunks-above-de
 ```
 
-round(cor_matrix, 2)
+### Variable Relations
+
+```{r}
+#| label: explore-var-relations
+
+num_vars <- joined_2_trim %>% select(where(is.numeric), -cost_km_2025_dollars) %>% names()
+cat_vars <- joined_2_trim %>% select(!where(is.numeric)) %>% names()
+
+# Step 1: Correlation of each numeric variable with the dependent, ranked by strength
+cor_out <- sapply(num_vars, \(v) cor(joined_2_trim[[v]], joined_2_trim$cost_km_2025_dollars, use = "complete.obs"))
+round(cor_out[order(-abs(cor_out))], 2)
+
+# Step 2: Correlations among regressors (long format, reused below)
+cor_mat <- joined_2_trim %>% select(all_of(num_vars)) %>% cor(use = "pairwise.complete.obs")
+
+cor_long <- cor_mat %>%
+  as.data.frame() %>%
+  mutate(var1 = rownames(cor_mat)) %>%
+  pivot_longer(-var1, names_to = "var2", values_to = "r")
+
+ggplot(cor_long, aes(x = var1, y = var2, fill = r)) +
+  geom_tile() +
+  scale_fill_gradient2(limits = c(-1, 1)) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+# Step 3: Flag highly correlated regressor pairs (multicollinearity risk)
+cor_long %>%
+  filter(var1 < var2, abs(r) > 0.8) %>%
+  arrange(desc(abs(r)))
+
+# Step 4: Outcome vs. every numeric variable, one faceted plot
+joined_2_trim %>%
+  select(cost_km_2025_dollars, all_of(num_vars)) %>%
+  pivot_longer(-cost_km_2025_dollars, names_to = "var", values_to = "value") %>%
+  ggplot(aes(x = value, y = cost_km_2025_dollars)) +
+  geom_point(alpha = 0.5) +
+  geom_smooth(method = "lm", se = FALSE) +
+  facet_wrap(~ var, scales = "free_x")
+
+# Step 5: Outcome by every (relevent) categorical variable
+  # col_ruler_2 and legal_systems_2
+joined_2_trim %>%
+  select(cost_km_2025_dollars, all_of(cat_vars)) %>%
+  select(-c(city, line, phase, iso3c)) %>%
+  pivot_longer(-cost_km_2025_dollars, names_to = "var", values_to = "level",
+               values_transform = as.character) %>%
+  ggplot(aes(x = cost_km_2025_dollars,
+             y = reorder(level, cost_km_2025_dollars, median, na.rm = TRUE))) +
+  geom_boxplot() +
+  facet_wrap(~ var, scales = "free_y") +
+  labs(y = "level")
+
+  # by country
+joined_2_trim %>%
+  group_by(iso3c) %>%
+  mutate(med = median(cost_km_2025_dollars, na.rm = TRUE)) %>%
+  ungroup() %>%
+  mutate(half = factor(if_else(dense_rank(med) <= n_distinct(iso3c) / 2,
+                               "Lower-cost half", "Upper-cost half"),
+                       levels = c("Upper-cost half", "Lower-cost half"))) %>%
+  ggplot(aes(x = cost_km_2025_dollars,
+             y = reorder(iso3c, cost_km_2025_dollars, median, na.rm = TRUE))) +
+  geom_boxplot() +
+  facet_wrap(~ half, scales = "free_y") +
+  labs(y = "iso3c")
+
+
+# Step 6: Bivariate regression for each numeric variable (slope and p-value)
+biv <- t(sapply(num_vars, \(v)
+                summary(lm(reformulate(v, "cost_km_2025_dollars"), data = joined_2_trim))$coefficients[2, c(1, 4)]))
+round(biv, 3)
+```
+
+### Variable Relations (no outlier)
+
+```{r}
+#| label: explore-var-relations-no-outlier
+
+joined_2_trim_no_max <- joined_2_trim %>%
+  filter(row_number() != which.max(cost_km_2025_dollars))
+
+num_vars <- joined_2_trim_no_max %>% select(where(is.numeric), -cost_km_2025_dollars) %>% names()
+cat_vars <- joined_2_trim_no_max %>% select(!where(is.numeric)) %>% names()
+
+# Step 1: Correlation of each numeric variable with the dependent, ranked by strength
+cor_out <- sapply(num_vars, \(v) cor(joined_2_trim_no_max[[v]], joined_2_trim_no_max$cost_km_2025_dollars, use = "complete.obs"))
+round(cor_out[order(-abs(cor_out))], 2)
+
+# Step 2: Correlations among regressors (long format, reused below)
+cor_mat <- joined_2_trim_no_max %>% select(all_of(num_vars)) %>% cor(use = "pairwise.complete.obs")
+
+cor_long <- cor_mat %>%
+  as.data.frame() %>%
+  mutate(var1 = rownames(cor_mat)) %>%
+  pivot_longer(-var1, names_to = "var2", values_to = "r")
+
+ggplot(cor_long, aes(x = var1, y = var2, fill = r)) +
+  geom_tile() +
+  scale_fill_gradient2(limits = c(-1, 1)) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+# Step 3: Flag highly correlated regressor pairs (multicollinearity risk)
+cor_long %>%
+  filter(var1 < var2, abs(r) > 0.8) %>%
+  arrange(desc(abs(r)))
+
+# Step 4: Outcome vs. every numeric variable, one faceted plot
+joined_2_trim_no_max %>%
+  select(cost_km_2025_dollars, all_of(num_vars)) %>%
+  pivot_longer(-cost_km_2025_dollars, names_to = "var", values_to = "value") %>%
+  ggplot(aes(x = value, y = cost_km_2025_dollars)) +
+  geom_point(alpha = 0.5) +
+  geom_smooth(method = "lm", se = FALSE) +
+  facet_wrap(~ var, scales = "free_x")
+
+# Step 5: Outcome by every (relevent) categorical variable
+  # col_ruler_2 and legal_systems_2
+joined_2_trim_no_max %>%
+  select(cost_km_2025_dollars, all_of(cat_vars)) %>%
+  select(-c(city, line, phase, iso3c)) %>%
+  pivot_longer(-cost_km_2025_dollars, names_to = "var", values_to = "level",
+               values_transform = as.character) %>%
+  ggplot(aes(x = cost_km_2025_dollars, y = level)) +
+  geom_boxplot() +
+  facet_wrap(~ var, scales = "free_y")
+
+  # by country
+joined_2_trim_no_max %>%
+  group_by(iso3c) %>%
+  mutate(med = median(cost_km_2025_dollars, na.rm = TRUE)) %>%
+  ungroup() %>%
+  mutate(half = factor(if_else(dense_rank(med) <= n_distinct(iso3c) / 2,
+                               "Lower-cost half", "Upper-cost half"),
+                       levels = c("Upper-cost half", "Lower-cost half"))) %>%
+  ggplot(aes(x = cost_km_2025_dollars,
+             y = reorder(iso3c, cost_km_2025_dollars, median, na.rm = TRUE))) +
+  geom_boxplot() +
+  facet_wrap(~ half, scales = "free_y") +
+  labs(y = "iso3c")
+
+
+# Step 6: Bivariate regression for each numeric variable (slope and p-value)
+biv <- t(sapply(num_vars, \(v)
+                summary(lm(reformulate(v, "cost_km_2025_dollars"), data = joined_2_trim_no_max))$coefficients[2, c(1, 4)]))
+round(biv, 3)
+```
 
 ```{r}
 #| label: explore-correlation
@@ -495,7 +647,6 @@ round(cor_matrix, 2)
 
 # create correlation matrix
 cor_matrix <- joined_2_trim %>%
-  select(-id) %>%
   select(where(is.numeric)) %>%
   cor(use = "pairwise.complete.obs")
 
@@ -523,6 +674,8 @@ cor_matrix %>%
   arrange(desc(abs(cor)))
 ```
 
+### Year Distribution
+
 ```{r}
 #| label: explore-years
 
@@ -532,6 +685,8 @@ ggplot(transit_data_1, aes(x = year)) +
 # ggplot(wage_data_1, aes(x = year)) +
 #   geom_histogram()
 ```
+
+### NA Values by Variable
 
 ```{r}
 #| label: explore-na
@@ -548,17 +703,14 @@ joined_2_trim %>%
 joined_2_trim %>%
   nrow()
 
-joined_2_trim %>%
-  filter(if_any(-c(platfrom_m_per_km, atgrade_per, elevated_per, id), is.na)) %>%
-  nrow()
-
+#CHOICE#NOTACTUALLYTHOMORELIKE#CRITICAL#
 joined_2_trim %>%
   filter(if_all(
-    -c(platfrom_m_per_km, atgrade_per, elevated_per, id), \(col) !is.na(col))) %>%
+    -c(platfrom_m_per_km, atgrade_per, elevated_per), \(col) !is.na(col))) %>%
   nrow()
-  
-  
 ```
+
+### Legal system and Countries
 
 ```{r}
 #| label: explore-legal-system
@@ -576,6 +728,7 @@ joined_2 %>%
   labs(x = "Proportion", y = NULL, fill = NULL) +
   guides(fill = guide_legend(ncol = 4))
 
+# Country distribution by legal system
 joined_2 %>%
   ggplot(aes(y = iso3c)) +
   geom_bar() +
@@ -583,6 +736,7 @@ joined_2 %>%
   labs(x = "Count", y = NULL) +
   theme(text = element_text(size = 7))
 
+# Country distribution
 joined_2 %>%
   ggplot(aes(x = "", fill = iso3c)) +
   geom_bar(width = 1) +
@@ -591,7 +745,16 @@ joined_2 %>%
   theme_void()
 ```
 
-# Diagnostics/bug-finding code used
+# Graveyard
+
+### Code Dump
+
+```{r}
+ggplot(joined_2_trim, aes(x = cost_km_2025_dollars)) +
+  geom_boxplot()
+```
+
+### Diagnostics/bug-finding code used
 
 ```{r}
 diesel_b2016_data_1 %>%
@@ -599,4 +762,9 @@ diesel_b2016_data_1 %>%
   filter(n > 1)
 
 joined %>% filter(!is.na(diesel_usd_per_liter_a), !is.na(diesel_usd_per_liter_b))
+
+joined_2_trim %>%
+  distinct(iso3c, year, diesel_usd_per_liter) %>%
+  ggplot(aes(x = year, y = diesel_usd_per_liter, color = iso3c)) +
+  geom_line()
 ```
