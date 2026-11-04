@@ -6,13 +6,9 @@ format: html
 
 To do:
 
-**Clean (before 2016) diesel data**
-
 Make sure its same type of measurement as a2016 data (ex real/nominal, ppp, etc)
 
-Combine with other diesel data
-
-Join
+**Join**
 
 get steel data
 
@@ -273,10 +269,9 @@ diesel_a2016_data_1 <- diesel_a2016_data_1 %>%
 diesel_a2016_data_1 <- diesel_a2016_data_1 %>%
   pivot_longer(cols = '2016':'2025',
                names_to = "year",
-               values_to = "diesel_usd_per_ltr_a")
+               values_to = "diesel_usd_per_liter_a")
 
 # guess_field(diesel_a2016_data_1$country_code)
-# # create iso3c variable
 # diesel_a2016_data_1 <- diesel_a2016_data_1 %>%
 #   mutate(iso3c = countrycode(country_code, "wb", "iso3c"))
 # Only Curacao is not iso3c already
@@ -285,6 +280,17 @@ diesel_a2016_data_1 <- diesel_a2016_data_1 %>%
 diesel_a2016_data_1 <- diesel_a2016_data_1 %>%
   mutate(country_code = if_else(country_code == "ANT", "CUW", country_code)) %>%
   rename(iso3c = country_code)
+
+# make year an int variable
+diesel_a2016_data_1 <- diesel_a2016_data_1 %>%
+  mutate(year = as.integer(year))
+
+# fix french guiana, martinique, and moldova iso3c codes
+diesel_a2016_data_1 <- diesel_a2016_data_1 %>%
+  mutate(iso3c = if_else(diesel_lcu_liter == "French Guiana", "GUF", iso3c)) %>%
+  mutate(iso3c = case_when(country == "Martinique" ~ "MTQ",
+                           country == "Moldova" ~ "MDA",
+                           .default = iso3c))
 ```
 
 ```{r}
@@ -330,21 +336,14 @@ diesel_b2016_data_1 <- diesel_b2016_data_1 %>%
 
 # guess_field(diesel_b2016_data_1$country_code, min_similarity = 50)
 # now ~94% match for iso3c, genc3c, etc
+# all remaining non-matches are duplicates containing no information
 
 diesel_b2016_data_1 <- diesel_b2016_data_1 %>%
-  mutate(country_code = case_match(country_code,
-                                   "ADO" ~ "AND",
-                                   "IMY" ~ "IMN",
-                                   "KSV" ~ "XKX",
-                                   "ROM" ~ "ROU",
-                                   "TMP" ~ "TLS",
-                                   "WBG" ~ "PSE",
-                                   "ZAR" ~ "COD",
-                                   .default = country_code)) %>%
+  filter(!country_code %in% c("ADO", "ZAR", "IMY", "WBG", "ROM", "TMP", "KSV")) %>%
   rename(iso3c = country_code)
 ```
 
-### Joining
+### Join
 
 ```{r}
 #| label: join
@@ -375,10 +374,20 @@ joined <- joined %>%
   left_join(wage_data_1 %>% select(iso3c, year, wage_per_month),
             by = c("iso3c", "year"))
 
-# ADD relevent variables from wage_data_1
+
+
+# ADD relevent variables from diesel_a2016_data_1
+joined <- joined %>%
+  left_join(diesel_a2016_data_1 %>% select(iso3c, year, diesel_usd_per_liter_a),
+            by = c("iso3c", "year"))
+
+# ADD relevent variables from diesel_a2016_data_1
+joined <- joined %>%
+  left_join(diesel_b2016_data_1 %>% select(iso3c, year, diesel_usd_per_liter_b),
+            by = c("iso3c", "year"))
 ```
 
-### Joined Cleaning
+### Joined Clean
 
 ```{r}
 #| label: joined-clean
@@ -437,12 +446,16 @@ joined_1 <- joined_1 %>%
   mutate(mixed_systems_components = if_else(
     is.na(mixed_systems_components), NA,
     sapply(strsplit(mixed_systems_components, "/"), \(parts) paste(sort(parts), collapse = "/"))))
+
+joined_1 <- joined_1 %>%
+  mutate(diesel_usd_per_liter = coalesce(
+    diesel_usd_per_liter_a, diesel_usd_per_liter_b))
 ```
 
 ### Transform Variables
 
 ```{r}
-#| label: transformed-variables
+#| label: transform-variables
 
 # Make variables
 joined_2 <- joined_1 %>%
@@ -463,23 +476,43 @@ joined_2 <- joined_1 %>%
 # Remove irrelevent variables
 joined_2_trim <- joined_2 %>%
   select(-c(tunnel, elevated, atgrade, stations, platform_length_meters,
-            legal_systems, mixed_systems_components, col_ruler_iso3c))
+            legal_systems, mixed_systems_components, col_ruler_iso3c,
+            diesel_usd_per_liter_a, diesel_usd_per_liter_b))
 ```
 
 # Data Exploration
 
 ```{r}
-# Keep open for RUN ALL CHUNKS ABOVE button easy access
+#| label: run-all-chunks-above-de
 ```
+
+round(cor_matrix, 2)
 
 ```{r}
 #| label: explore-correlation
+#| fig-width: 12
+#| fig-height: 10
 
 # create correlation matrix
 cor_matrix <- joined_2_trim %>%
   select(-id) %>%
   select(where(is.numeric)) %>%
   cor(use = "pairwise.complete.obs")
+
+cor_round <- round(cor_matrix, 2)
+colnames(cor_round) <- abbreviate(colnames(cor_round), 4)
+cor_round
+
+cor_round %>%
+  as.data.frame() %>%
+  rownames_to_column("var1") %>%
+  pivot_longer(-var1, names_to = "var2", values_to = "r") %>%
+  ggplot(aes(var2, var1, fill = r)) +
+  geom_tile() +
+  geom_text(aes(label = r), size = 3) +
+  scale_fill_gradient2(limits = c(-1, 1)) +
+  labs(x = NULL, y = NULL, fill = "r") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 # create a table from the matrix and sort by absolute value of correlation
 cor_matrix %>%
@@ -556,4 +589,14 @@ joined_2 %>%
   coord_polar(theta = "y") +
   labs(fill = NULL) +
   theme_void()
+```
+
+# Diagnostics/bug-finding code used
+
+```{r}
+diesel_b2016_data_1 %>%
+  count(iso3c, year) %>%
+  filter(n > 1)
+
+joined %>% filter(!is.na(diesel_usd_per_liter_a), !is.na(diesel_usd_per_liter_b))
 ```
