@@ -4,6 +4,30 @@ author: "Ethan Schwartz"
 format: html
 ---
 
+To do:
+
+**Clean (before 2016) diesel data**
+
+Make sure its same type of measurement as a2016 data (ex real/nominal, ppp, etc)
+
+Combine with other diesel data
+
+Join
+
+get steel data
+
+clean
+
+join
+
+get concrete/cement data
+
+clean
+
+join
+
+do correlations with dummys(?)
+
 # Setup
 
 ```{r}
@@ -37,7 +61,6 @@ legal_origins_data <- read.csv("data/legal_origins_data.csv") %>%
   clean_names() %>%
   mutate(across(where(is.character), \(x) na_if(x, "")))
 
-
 ## Source: Hensel, P. R. (2018, November 13). ICOW Colonial History Data.
 ##         https://paulhensel.org/icowcol.html
 colonize_data <- read.csv("data/col_data.csv") %>%
@@ -60,7 +83,7 @@ wage_data <- read.csv("data/const_wage_data.csv") %>%
 ## Source: World Bank Group. (2025, April 24). Global fuel prices database - world
 ##         bank data catalog. Data Catalog.
 ##         https://datacatalog.worldbank.org/search/dataset/0066829/global-fuel-prices-database 
-diesel_a2015_data <- read_excel("data/Global_Fuel_Prices_Database.xlsx",
+diesel_a2016_data <- read_excel("data/Global_Fuel_Prices_Database.xlsx",
                           sheet = "Diesel USD") %>%
   rename_with(\(nm) as.character(excel_numeric_to_date(as.numeric(nm))),
               .cols = matches("^\\d+$")) %>%
@@ -68,7 +91,10 @@ diesel_a2015_data <- read_excel("data/Global_Fuel_Prices_Database.xlsx",
   mutate(across(where(is.character), \(x) na_if(x, "")))
 
 ## Source: World Bank Group. (n.d.). WDI Database Archives. DataBank.
-##         https://databank.worldbank.org/source/wdi-database-archives# 
+##         https://databank.worldbank.org/source/wdi-database-archives#
+diesel_b2016_data <- read.csv("data/wb_diesel_b2016_data.csv") %>%
+  clean_names() %>%
+  mutate(across(where(is.character), \(x) na_if(x, "")))
 ```
 
 # Data Cleaning
@@ -221,13 +247,13 @@ wage_data_1 <- wage_data_1 %>%
 ```
 
 ```{r}
-#| label: clean-diesel-a2015
+#| label: clean-diesel-a2016
 
 # There are multiple observations per country, default_map_1_show seems to indicate
 # the main observation
 
 # filter to only default_map_1_show == 1
-diesel_a2015_data_1 <- diesel_a2015_data %>%
+diesel_a2016_data_1 <- diesel_a2016_data %>%
   filter(default_map_1_to_show == 1)
 
 
@@ -235,29 +261,86 @@ diesel_a2015_data_1 <- diesel_a2015_data %>%
 start <- 2016
 n_times <- 10
 for (yr in start:(start + n_times - 1)) {
-  diesel_a2015_data_1 <- diesel_a2015_data_1 %>%
+  diesel_a2016_data_1 <- diesel_a2016_data_1 %>%
     mutate("{yr}" := rowMeans(pick(contains(as.character(yr))), na.rm = TRUE))
 }
 
 # delete monthly values
-diesel_a2015_data_1 <- diesel_a2015_data_1 %>%
+diesel_a2016_data_1 <- diesel_a2016_data_1 %>%
   select(-c("x2015_12_01":"x2025_04_01"))
 
 # Lengthen df by year
-diesel_a2015_data_1 <- diesel_a2015_data_1 %>%
+diesel_a2016_data_1 <- diesel_a2016_data_1 %>%
   pivot_longer(cols = '2016':'2025',
                names_to = "year",
-               values_to = "diesel_usd_per_ltr")
+               values_to = "diesel_usd_per_ltr_a")
 
-# guess_field(diesel_a2015_data_1$country_code)
+# guess_field(diesel_a2016_data_1$country_code)
 # # create iso3c variable
-# diesel_a2015_data_1 <- diesel_a2015_data_1 %>%
+# diesel_a2016_data_1 <- diesel_a2016_data_1 %>%
 #   mutate(iso3c = countrycode(country_code, "wb", "iso3c"))
 # Only Curacao is not iso3c already
 
 # correct curacao code and rename country_code to iso3c
-diesel_a2015_data_1 <- diesel_a2015_data_1 %>%
+diesel_a2016_data_1 <- diesel_a2016_data_1 %>%
   mutate(country_code = if_else(country_code == "ANT", "CUW", country_code)) %>%
+  rename(iso3c = country_code)
+```
+
+```{r}
+#| label: clean-diesel-b2016
+
+# regex by claude
+# renames messy year headers to just the four digit year
+diesel_b2016_data_1 <- diesel_b2016_data %>%
+  rename_with(\(nm) sub("^x(\\d{4})_yr\\d{4}$", "\\1", nm),
+              .cols = matches("^x\\d{4}_yr\\d{4}$"))
+
+# pivot_longer by year, fills in missing year values by averaging nearest 1 or 2 value(s) of the country [there is usually a 1 year gap between observations]. Value is made NA if there aren't any values within 2 years
+diesel_b2016_data_1 <- diesel_b2016_data_1 %>%
+  pivot_longer(`1960`:`2015`, names_to = "year", values_to = "diesel_usd_per_liter_b") %>%
+  mutate(diesel_usd_per_liter_b = as.numeric(diesel_usd_per_liter_b),
+         year = as.numeric(year)) %>%
+  mutate(prev = diesel_usd_per_liter_b, nxt = diesel_usd_per_liter_b,
+         prev_yr = if_else(is.na(diesel_usd_per_liter_b), NA, year), nxt_yr = prev_yr) %>%
+  group_by(country_name) %>%
+  fill(prev, prev_yr, .direction = "down") %>%
+  fill(nxt, nxt_yr, .direction = "up") %>%
+  ungroup() %>%
+  mutate(prev = if_else(year - prev_yr <= 2, prev, NA),
+         nxt = if_else(nxt_yr - year <= 2, nxt, NA),
+         diesel_usd_per_liter_b = coalesce(diesel_usd_per_liter_b, (prev + nxt) / 2, prev, nxt)) %>%
+  select(-prev, -nxt, -prev_yr, -nxt_yr)
+
+# guess_field(diesel_b2016_data_1$country_code, min_similarity = 50)
+# ~75% match for iso3c, genc3cm, wb, wb_api3c
+
+# The issue is the data set includes regions
+
+# List by claude
+non_countries <- c("income", "IDA", "IBRD", "&", "dividend", "small states", "Small states",
+                   "Euro area", "European", "World", "OECD", "Indebted", "Fragile",
+                   "Least developed", "Arab League", "Baltics", "EASTERN EUROPE",
+                   "Sub-Saharan", "SUB-SAHARAN", "South Asia", "North America",
+                   "Africa Eastern", "Africa Western", "China and India",
+                   "Channel Islands", "Data from", "Last Updated")
+
+diesel_b2016_data_1 <- diesel_b2016_data_1 %>%
+  filter(!str_detect(country_name, paste(non_countries, collapse = "|")))
+
+# guess_field(diesel_b2016_data_1$country_code, min_similarity = 50)
+# now ~94% match for iso3c, genc3c, etc
+
+diesel_b2016_data_1 <- diesel_b2016_data_1 %>%
+  mutate(country_code = case_match(country_code,
+                                   "ADO" ~ "AND",
+                                   "IMY" ~ "IMN",
+                                   "KSV" ~ "XKX",
+                                   "ROM" ~ "ROU",
+                                   "TMP" ~ "TLS",
+                                   "WBG" ~ "PSE",
+                                   "ZAR" ~ "COD",
+                                   .default = country_code)) %>%
   rename(iso3c = country_code)
 ```
 
@@ -291,6 +374,8 @@ joined <- joined %>%
 joined <- joined %>%
   left_join(wage_data_1 %>% select(iso3c, year, wage_per_month),
             by = c("iso3c", "year"))
+
+# ADD relevent variables from wage_data_1
 ```
 
 ### Joined Cleaning
